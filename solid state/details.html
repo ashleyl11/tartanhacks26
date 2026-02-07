@@ -1,196 +1,232 @@
 <!DOCTYPE HTML>
 <html>
-	<head>
-		<title>Bill Details - Solid State</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-        <style>
-            #loading-screen { padding: 50px; text-align: center; }
-            .bill-data-box { background: rgba(255, 255, 255, 0.05); padding: 2rem; border-radius: 4px; border-left: 4px solid #4c5c96; margin-bottom: 2rem; }
-            .status-badge { display: inline-block; padding: 0.2rem 0.8rem; background: #4c5c96; border-radius: 20px; font-size: 0.8rem; margin-bottom: 1rem; }
-        </style>
-	</head>
-	<body class="is-preload">
+<head>
+    <title>Bill Details - Solid State</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+    <style>
+        #loading-screen { padding: 50px; text-align: center; }
+        .bill-data-box { background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 4px; border-left: 4px solid #4c5c96; margin-bottom: 1.5rem; }
+        .status-badge { display: inline-block; padding: 0.2rem 0.8rem; background: #4c5c96; border-radius: 20px; font-size: 0.8rem; margin-bottom: 1rem; }
+        #bill-documents-list .button { margin-top: 0.5rem; }
+        .doc-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem 0; }
+        .doc-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body class="is-preload">
 
-		<div id="page-wrapper">
+    <div id="page-wrapper">
 
-            <header id="header">
-                <h1><a href="index.html">Solid State</a></h1>
-                <nav>
-                    <a href="#menu">Menu</a>
-                </nav>
+        <header id="header">
+            <h1><a href="index.html">Solid State</a></h1>
+            <nav>
+                <a href="#menu">Menu</a>
+            </nav>
+        </header>
+
+        <nav id="menu">
+            <div class="inner">
+                <h2>Menu</h2>
+                <ul class="links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="map.html">Interactive Map</a></li>
+                    <li><a href="allbills.html">All Recent Legislation</a></li>
+                </ul>
+                <a href="#" class="close">Close</a>
+            </div>
+        </nav>
+
+        <section id="wrapper">
+            <header>
+                <div class="inner">
+                    <h2 id="bill-id-header">Loading Bill...</h2>
+                    <p id="bill-title-sub">Please wait while we fetch the latest legislative data.</p>
+                </div>
             </header>
 
-        <!-- Menu -->
-            <nav id="menu">
+            <div class="wrapper">
                 <div class="inner">
-                    <h2>Menu</h2>
-                    <ul class="links">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="map.html">Interactive Map</a></li>
-                        <li><a href="allbills.html">All Recent Legislation</a></li>
-                        <!-- <li><a href="#">Log In</a></li>
-                        <li><a href="#">Sign Up</a></li> -->
-                    </ul>
-                    <a href="#" class="close">Close</a>
+                    
+                    <div id="loading-screen">
+                        <div class="preloader">Processing API Request...</div>
+                    </div>
+
+                    <div id="bill-content" style="display:none;">
+                        <section>
+                            <div class="status-badge" id="bill-status">Status Unknown</div>
+                            <h3 class="major">Summary</h3>
+                            <p id="bill-summary-text"></p>
+                            
+                            <div class="row">
+                                <div class="col-6 col-12-medium">
+                                    <h4>Fast Facts</h4>
+                                    <ul class="alt" id="bill-facts">
+                                        </ul>
+                                </div>
+                                <div class="col-6 col-12-medium">
+                                    <h4>Sponsors & Authors</h4>
+                                    <ul id="bill-sponsors">
+                                        </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 class="major">Official Documents & Full Text</h3>
+                            <div id="bill-documents-list" class="bill-data-box">
+                                <p>Loading document links...</p>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 class="major">Latest Actions</h3>
+                            <div class="table-wrapper">
+                                <table class="alt">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Action</th>
+                                            <th>Organization</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="actions-table">
+                                        </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <ul class="actions">
+                            <li><a href="allbills.html" class="button">Back to List</a></li>
+                            <li><a id="official-link" href="#" target="_blank" class="button primary">View Full Bill</a></li>
+                        </ul>
+                    </div>
+
                 </div>
-            </nav>
+            </div>
+        </section>
+    </div>
 
-			<section id="wrapper">
-				<header>
-					<div class="inner">
-						<h2 id="bill-id-header">Loading Bill...</h2>
-						<p id="bill-title-sub">Please wait while we fetch the latest legislative data.</p>
-					</div>
-				</header>
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/jquery.scrollex.min.js"></script>
+    <script src="assets/js/browser.min.js"></script>
+    <script src="assets/js/breakpoints.min.js"></script> 
+    <script src="assets/js/util.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="config.js"></script>
 
-				<div class="wrapper">
-					<div class="inner">
-                        
-                        <div id="loading-screen">
-                            <div class="preloader">Processing API Request...</div>
-                        </div>
+    <script>
+        const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY; 
 
-                        <div id="bill-content" style="display:none;">
-                            <section>
-                                <div class="status-badge" id="bill-status">Status Unknown</div>
-                                <h3 class="major">Summary</h3>
-                                <p id="bill-summary-text"></p>
-                                
-                                <div class="row">
-                                    <div class="col-6 col-12-medium">
-                                        <h4>Fast Facts</h4>
-                                        <ul class="alt" id="bill-facts">
-                                            </ul>
-                                    </div>
-                                    <div class="col-6 col-12-medium">
-                                        <h4>Sponsors & Authors</h4>
-                                        <ul id="bill-sponsors">
-                                            </ul>
-                                    </div>
-                                </div>
-                            </section>
+        async function fetchFullBillDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const billId = urlParams.get('bill_id');
+            const state = urlParams.get('state');
 
-                            <section>
-                                <h3 class="major">Latest Actions</h3>
-                                <div class="table-wrapper">
-                                    <table class="alt">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Action</th>
-                                                <th>Organization</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="actions-table">
-                                            </tbody>
-                                    </table>
-                                </div>
-                            </section>
-
-                            <ul class="actions">
-                                <li><a href="map.html" class="button">Return to Map</a></li>
-                                <li><a id="official-link" href="#" target="_blank" class="button primary">View Full Text</a></li>
-                            </ul>
-                        </div>
-
-					</div>
-				</div>
-			</section>
-
-		</div>
-
-        <script src="assets/js/jquery.min.js"></script>
-        <script src="assets/js/jquery.scrollex.min.js"></script>
-        <script src="assets/js/browser.min.js"></script>
-        <script src="assets/js/breakpoints.min.js"></script> 
-        <script src="assets/js/util.js"></script>
-        <script src="assets/js/main.js"></script>
-        <script src="config.js"></script>
-
-
-        <script>
-            // CONFIGURATION
-            const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY; 
-
-            async function fetchFullBillDetails() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const billId = urlParams.get('bill_id');
-                const state = urlParams.get('state');
-
-                if (!billId || !state) {
-                    document.getElementById('bill-id-header').innerText = "Error: No Bill Selected";
-                    return;
-                }
-
-                try {
-                    const jurisdictionId = `ocd-jurisdiction/country:us/state:${state}/government`;
-                    // Fetch specifically for this bill identifier
-                    const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&identifier=${encodeURIComponent(billId)}&include=sponsorships&include=actions&apikey=${PLURAL_API_KEY}`;
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
-                    const response = await fetch(proxyUrl);
-                    const data = await response.json();
-                    const bill = data.results[0]; // Get the first match
-
-                    if (bill) {
-                        renderBill(bill);
-                    } else {
-                        throw new Error("Bill not found");
-                    }
-                } catch (err) {
-                    console.error(err);
-                    document.getElementById('bill-id-header').innerText = "Data Unavailable";
-                }
+            if (!billId || !state) {
+                document.getElementById('bill-id-header').innerText = "Error: No Bill Selected";
+                return;
             }
 
-            function renderBill(bill) {
-                // Hide loader
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('bill-content').style.display = 'block';
+            try {
+                const jurisdictionId = `ocd-jurisdiction/country:us/state:${state}/government`;
+                
+                // Added include=documents and include=versions to get the text links
+                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&identifier=${encodeURIComponent(billId)}&include=sponsorships&include=actions&include=documents&include=versions&apikey=${PLURAL_API_KEY}`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
-                // Basic Info
-                document.getElementById('bill-id-header').innerText = bill.identifier;
-                document.getElementById('bill-title-sub').innerText = bill.title;
-                document.getElementById('bill-summary-text').innerText = bill.title; // v3 uses title for summary usually
-                document.getElementById('bill-status').innerText = bill.latest_action_description || "Active";
-                document.getElementById('official-link').href = bill.openstates_url;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                const bill = data.results[0];
 
-                // Fast Facts
-                const facts = document.getElementById('bill-facts');
-                facts.innerHTML = `
-                    <li><strong>Session:</strong> ${bill.session}</li>
-                    <li><strong>Jurisdiction:</strong> ${bill.jurisdiction.name}</li>
-                    <li><strong>Last Updated:</strong> ${new Date(bill.updated_at).toLocaleDateString()}</li>
-                `;
-
-                // Sponsors
-                const sponsorList = document.getElementById('bill-sponsors');
-                if (bill.sponsorships) {
-                    bill.sponsorships.forEach(s => {
-                        sponsorList.innerHTML += `<li>${s.name} <small>(${s.classification})</small></li>`;
-                    });
+                if (bill) {
+                    renderBill(bill);
+                } else {
+                    throw new Error("Bill not found");
                 }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('bill-id-header').innerText = "Data Unavailable";
+                document.getElementById('loading-screen').innerHTML = "<p>Could not retrieve bill data. It may be from an older session.</p>";
+            }
+        }
 
-                // Actions Table
-                const table = document.getElementById('actions-table');
-                if (bill.actions) {
-                    bill.actions.reverse().forEach(a => {
-                        table.innerHTML += `
-                            <tr>
-                                <td>${new Date(a.date).toLocaleDateString()}</td>
-                                <td>${a.description}</td>
-                                <td>${a.organization.name}</td>
-                            </tr>
-                        `;
-                    });
-                }
+        function renderBill(bill) {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('bill-content').style.display = 'block';
+
+            // Headers
+            document.getElementById('bill-id-header').innerText = bill.identifier;
+            document.getElementById('bill-title-sub').innerText = bill.title;
+            document.getElementById('bill-summary-text').innerText = bill.title; 
+            document.getElementById('bill-status').innerText = bill.latest_action_description || "Active";
+            document.getElementById('official-link').href = bill.openstates_url;
+
+            // Facts
+            const facts = document.getElementById('bill-facts');
+            facts.innerHTML = `
+                <li><strong>Session:</strong> ${bill.session}</li>
+                <li><strong>Jurisdiction:</strong> ${bill.jurisdiction.name}</li>
+                <li><strong>Last Updated:</strong> ${new Date(bill.updated_at).toLocaleDateString()}</li>
+            `;
+
+            // Sponsors
+            const sponsorList = document.getElementById('bill-sponsors');
+            sponsorList.innerHTML = '';
+            if (bill.sponsorships && bill.sponsorships.length > 0) {
+                bill.sponsorships.forEach(s => {
+                    sponsorList.innerHTML += `<li>${s.name} <small style="opacity:0.6;">(${s.classification})</small></li>`;
+                });
+            } else {
+                sponsorList.innerHTML = "<li>No sponsors listed.</li>";
             }
 
-            // Start the process
-            window.onload = fetchFullBillDetails;
-        </script>
-	</body>
+            // --- Documents (Full Text) Logic ---
+            const docsContainer = document.getElementById('bill-documents-list');
+            docsContainer.innerHTML = ''; 
+            
+            // Versions are usually the actual law text; Documents are usually summaries/fiscal notes
+            const allDocs = [...(bill.versions || []), ...(bill.documents || [])];
+
+            if (allDocs.length > 0) {
+                allDocs.forEach(doc => {
+                    const linkUrl = doc.links[0].url;
+                    docsContainer.innerHTML += `
+                        <div class="doc-item">
+                            <div class="row gtr-uniform">
+                                <div class="col-8">
+                                    <strong>${doc.note || 'Official Version'}</strong>
+                                </div>
+                                <div class="col-4" style="text-align: right;">
+                                    <a href="${linkUrl}" target="_blank" class="button small fit">Open Full Text</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                docsContainer.innerHTML = '<p>No official document links found for this bill.</p>';
+            }
+
+            // Actions Table
+            const table = document.getElementById('actions-table');
+            table.innerHTML = '';
+            if (bill.actions) {
+                // Reverse so latest action is on top
+                [...bill.actions].reverse().forEach(a => {
+                    table.innerHTML += `
+                        <tr>
+                            <td>${new Date(a.date).toLocaleDateString()}</td>
+                            <td>${a.description}</td>
+                            <td>${a.organization.name}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        window.onload = fetchFullBillDetails;
+    </script>
+</body>
 </html>
