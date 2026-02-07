@@ -18,14 +18,9 @@
 
   <style>
     /* Banner map */
-    #banner-map {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-    }
+    #banner-map { position: absolute; inset: 0; z-index: 0; }
     #banner .inner { position: relative; z-index: 1; }
 
-    /* Cards / panels */
     .panel {
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.10);
@@ -33,6 +28,7 @@
       padding: 1.25rem;
       margin-top: 1rem;
     }
+
     .rep-card {
       cursor: pointer;
       padding: 1rem;
@@ -50,13 +46,21 @@
 
     textarea { min-height: 280px; }
 
-    /* Make buttons in a row wrap nicely */
     .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(76,92,150,0.25);
+      border: 1px solid rgba(76,92,150,0.45);
+      font-size: 0.8em;
+      margin-left: 6px;
+    }
   </style>
 </head>
 
 <body class="is-preload">
-
   <div id="page-wrapper">
 
     <!-- Header -->
@@ -85,7 +89,7 @@
       <div class="inner">
         <div class="logo"><span class="icon fa-gem"></span></div>
         <h2>Contact Your Representative</h2>
-        <p>Copy a pre-filled message and submit it through the official contact form.</p>
+        <p>Find your reps, copy a message, and paste it into the official contact page.</p>
       </div>
     </section>
 
@@ -99,17 +103,16 @@
             <p class="muted">Selected bill (from the previous page):</p>
             <p style="margin:0;"><strong id="billLabel">(No bill selected)</strong></p>
             <p class="small muted" style="margin-top:0.5rem;">
-              If this is blank, make sure your bill page links to
-              <span class="muted">contact.html?billId=...&billTitle=...</span>
+              This page expects <span class="muted">contact.html?billId=...&billTitle=...</span>
             </p>
           </div>
 
-          <h2 class="major" style="margin-top:2rem;">Step 2: Find your federal representatives</h2>
+          <h2 class="major" style="margin-top:2rem;">Step 2: Find your representatives</h2>
           <div class="panel">
             <div class="row gtr-uniform">
               <div class="col-9 col-12-medium">
-                <label for="addressInput">Full address (street, city, state, zip)</label>
-                <input id="addressInput" type="text" placeholder="350 5th Ave, New York, NY 10118" />
+                <label for="zipInput">ZIP code (5 digits)</label>
+                <input id="zipInput" type="text" placeholder="e.g. 10118" maxlength="5" />
               </div>
               <div class="col-3 col-12-medium">
                 <label>&nbsp;</label>
@@ -125,22 +128,28 @@
           <h2 class="major" style="margin-top:2rem;">Step 3: Copy your message</h2>
           <div class="panel">
             <p class="muted small" style="margin-top:0;">
-              Clicking a representative above will auto-fill only their name in the template below. Everything else is editable.
+              Click a representative above to auto-fill only their name in the template below.
             </p>
+
+            <label class="muted small">Choose your message tone</label>
+<div class="btn-row" style="margin: 0.5rem 0 1rem 0;">
+  <button id="toneSupportBtn" class="button small">I Support This Bill</button>
+  <button id="toneOpposeBtn" class="button small">I Oppose This Bill</button>
+</div>
+
 
             <label for="templateBox">Message template</label>
             <textarea id="templateBox"></textarea>
 
             <div class="btn-row" style="margin-top: 1rem;">
               <button id="copyBtn" class="button">Copy Message</button>
-              <a id="contactFormBtn" class="button primary" href="#" target="_blank" rel="noreferrer" style="pointer-events:none; opacity:.5;">
-                Open Contact Form
-              </a>
+              <a id="openProfileBtn" class="button primary" href="#" target="_blank" rel="noreferrer"
+                 style="pointer-events:none; opacity:.5;">Open Profile</a>
               <span class="muted small" id="selectedRepLabel"></span>
             </div>
 
             <p class="muted small" style="margin-top:1rem;">
-              Note: Most representatives require you to use their website contact form. We provide the official link when available.
+              Note: OpenStates data may include office addresses/phones or links. If no direct contact form exists, use the official website link on the profile.
             </p>
           </div>
 
@@ -170,7 +179,7 @@
   <script src="assets/js/main.js"></script>
 
   <script>
-    // ------------------ Banner map ------------------
+    // ---------- Banner map ----------
     const bannerMap = L.map("banner-map", {
       center: [40.4406, -79.9959],
       zoom: 10,
@@ -179,10 +188,7 @@
       scrollWheelZoom: false,
       attributionControl: false
     });
-
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { opacity: 0.25 })
-      .addTo(bannerMap);
-
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { opacity: 0.25 }).addTo(bannerMap);
     document.getElementById("banner").addEventListener("mousemove", (e) => {
       const { width, height } = e.currentTarget.getBoundingClientRect();
       const offsetX = ((e.clientX / width) - 0.5) * 0.1;
@@ -190,23 +196,42 @@
       bannerMap.panBy([offsetX * 100, offsetY * 50], { animate: false });
     });
 
-    // ------------------ Contact page logic ------------------
+    // ---------- Helpers ----------
     const $ = (id) => document.getElementById(id);
 
-    // 1) Read bill from query string
+    // ---------- Bill from query params ----------
     const qp = new URLSearchParams(window.location.search);
     const billId = qp.get("billId") || "";
     const billTitle = qp.get("billTitle") || "";
     const billLabel = [billId, billTitle].filter(Boolean).join(" — ");
     $("billLabel").textContent = billLabel || "(No bill selected)";
 
-    // 2) Build template (only rep name should be auto-filled)
-    function buildTemplate(repName) {
-      const billRef = billLabel || "[Bill Number, Name of the Bill/Topic]";
-      return `Dear ${repName || "[Representative/Senator Name]"},
-I am a resident of [Your City/District] and I am writing to express my strong disappointment regarding your vote in favor of ${billRef}.
+    // ---------- Template (auto-fill only rep name + bill reference) ----------
+    let currentTone = "oppose"; // default
+    let selectedRepName = "";   // <-- ADD THIS
 
-As a constituent, I believed this legislation would [mention what you wished for], but instead, it [explain the negative impact of the bill- how did it directly impact you/your family/your community]. This bill will directly harm [mention specific group, e.g., working families, students, local businesses].
+function buildTemplate(repName) {
+  const billRef = billLabel || "[Bill Number, Name of the Bill/Topic]";
+  const nameLine = `Dear ${repName || "[Representative/Senator Name]"},`;
+
+  if (currentTone === "support") {
+    return `${nameLine}
+I am a resident of [Your City/District] and I am writing to express my strong support for your work on ${billRef}.
+
+As a constituent, I believe this legislation will [describe the positive impact you expect]. I appreciate your attention to [the issue area], and I encourage you to continue supporting policies that [your goal].
+
+Thank you for representing our community and for your leadership on this matter.
+
+Sincerely,
+[Your Name]
+[Your Address/Contact Information]`;
+  }
+
+  // currentTone === "oppose"
+  return `${nameLine}
+I am a resident of [Your City/District] and I am writing to express my strong disappointment regarding your position on ${billRef}.
+
+As a constituent, I believed this legislation would [mention what you wished for], but instead, it [explain the negative impact—how did it impact you/your family/your community]. This bill will directly harm [mention specific group, e.g., working families, students, local businesses].
 
 I urge you to reconsider your position on this issue and to support [mention a remedy, such as repeal, amendment, or a future opposing vote].
 
@@ -215,31 +240,31 @@ I look forward to seeing your actions in upcoming votes.
 Sincerely,
 [Your Name]
 [Your Address/Contact Information]`;
-    }
+}
 
-    $("templateBox").value = buildTemplate("");
+function refreshTemplate() {
+  $("templateBox").value = buildTemplate(selectedRepName);
+}
 
-    // 3) Legisletter lookup
-    async function lookupLegisletter(address) {
-      const key = window.CONFIG?.LEGISLETTER_KEY;
-      if (!key) throw new Error("Missing LEGISLETTER_KEY in config.js");
+// initial load
+refreshTemplate();
 
-      const url = new URL("https://api.legisletter.org/v1/lookup");
-      url.searchParams.set("address", address);
+// tone toggle buttons
+$("toneSupportBtn").addEventListener("click", () => {
+  currentTone = "support";
+  refreshTemplate();
+});
 
-      const res = await fetch(url.toString(), {
-        headers: { "Authorization": `Bearer ${key}` }
-      });
+$("toneOpposeBtn").addEventListener("click", () => {
+  currentTone = "oppose";
+  refreshTemplate();
+});
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data?.message || data?.error || "Legisletter lookup failed");
-      }
-      return data;
-    }
+    // ---------- OpenStates lookup pipeline ----------
+    const PLURAL_API_KEY = window.CONFIG?.PLURAL_API_KEY;
 
-    function setContactButton(link) {
-      const a = $("contactFormBtn");
+    function setOpenProfileButton(link) {
+      const a = $("openProfileBtn");
       a.href = link || "#";
       if (link) {
         a.style.pointerEvents = "auto";
@@ -250,76 +275,122 @@ Sincerely,
       }
     }
 
-    function renderReps(data) {
+    async function zipToLatLng(zip) {
+      const geoRes = await fetch(`https://api.zippopotam.us/us/${encodeURIComponent(zip)}`);
+      if (!geoRes.ok) throw new Error("ZIP code not found.");
+      const geoData = await geoRes.json();
+      const place = geoData.places?.[0];
+      return {
+        lat: parseFloat(place.latitude),
+        lng: parseFloat(place.longitude),
+        city: place["place name"],
+        state: place["state abbreviation"]
+      };
+    }
+
+    async function lookupPeopleGeo(lat, lng) {
+      if (!PLURAL_API_KEY) throw new Error("Missing PLURAL_API_KEY in config.js");
+
+      const cleanLat = parseFloat(lat).toFixed(4);
+      const cleanLng = parseFloat(lng).toFixed(4);
+
+      // include=links,offices is useful if available
+      const targetUrl =
+        `https://v3.openstates.org/people.geo?lat=${cleanLat}&lng=${cleanLng}` +
+        `&include=links&include=offices&apikey=${encodeURIComponent(PLURAL_API_KEY)}`;
+
+      // Use AllOrigins to avoid CORS
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error("OpenStates lookup failed.");
+      return res.json(); // { results: [...] }
+    }
+
+    function chamberLabelFromRole(role) {
+      const cls = role?.org_classification;
+      if (cls === "upper") return "State Senator";
+      if (cls === "lower") return "State Representative";
+      return role?.title || "Legislator";
+    }
+
+    function renderPeople(people, locationLabel) {
       const container = $("repResults");
       container.innerHTML = "";
 
-      const reps = [];
-      for (const s of (data.representatives?.senators || [])) reps.push(s);
-      if (data.representatives?.representative) reps.push(data.representatives.representative);
-
-      if (!reps.length) {
-        container.innerHTML = "<p>No representatives returned for that address.</p>";
+      if (!people || people.length === 0) {
+        container.innerHTML = "<p>No representatives found for that ZIP.</p>";
         return;
       }
 
-      container.innerHTML = reps.map((r, idx) => {
-        const chamberLabel = (r.chamber === "senate") ? "U.S. Senator" : "U.S. House";
-        const contact = r.contactForm || r.website || "";
+      container.innerHTML = people.map((p, idx) => {
+        const party = p.party || "Unknown";
+        const role = p.current_role || {};
+        const chamber = chamberLabelFromRole(role);
+        const district = (role.district !== undefined && role.district !== null) ? `District ${role.district}` : "";
+        const profile = p.openstates_url || "#";
+
+        // If OpenStates includes links, try to find a homepage-ish link
+        const homepage = (p.links || []).find(l => (l.note || "").toLowerCase().includes("home"))?.url
+                      || (p.links || [])[0]?.url
+                      || "";
+
+        const badge = p.jurisdiction?.name ? `<span class="badge">${p.jurisdiction.name}</span>` : "";
+
         return `
           <div class="rep-card" data-idx="${idx}">
-            <strong>${r.name}</strong> <span class="muted">(${r.party})</span><br/>
-            <span class="muted small">${chamberLabel} • ${r.state}${r.district ? ("-" + r.district) : ""}</span><br/>
-            <span class="muted small">Phone: ${r.phone || "N/A"}</span><br/>
+            <strong>${p.name}</strong> <span class="muted">(${party})</span> ${badge}<br/>
+            <span class="muted small">${chamber}${district ? " • " + district : ""}</span><br/>
             <span class="small">
-              <a href="${r.website}" target="_blank" rel="noreferrer">Website</a>
-              ${r.contactForm ? ` • <a href="${r.contactForm}" target="_blank" rel="noreferrer">Contact Form</a>` : ""}
+              <a href="${profile}" target="_blank" rel="noreferrer">OpenStates Profile</a>
+              ${homepage ? ` • <a href="${homepage}" target="_blank" rel="noreferrer">Official Site</a>` : ""}
             </span>
           </div>
         `;
       }).join("");
 
-      // Click to select rep -> fill template name + enable contact link
       const cards = container.querySelectorAll(".rep-card");
       cards.forEach(card => {
         card.addEventListener("click", () => {
           cards.forEach(c => c.classList.remove("selected"));
           card.classList.add("selected");
 
-          const r = reps[Number(card.getAttribute("data-idx"))];
+          const p = people[Number(card.getAttribute("data-idx"))];
 
-          // Only auto-supply rep name
-          $("templateBox").value = buildTemplate(r.name);
+          // Auto-fill only rep name
+          selectedRepName=p.name;
+          refreshTemplate();
 
-          // Use contact form if present, otherwise website
-          const contactLink = r.contactForm || r.website || "";
-          setContactButton(contactLink);
+          // Best link we can guarantee: OpenStates profile
+          setOpenProfileButton(p.openstates_url || "");
 
-          $("selectedRepLabel").textContent = `Selected: ${r.name}`;
-          $("status").textContent = "Copy the message, then open the contact form and paste it in.";
+          $("selectedRepLabel").textContent = `Selected: ${p.name}`;
+          $("status").textContent = `Found reps for ${locationLabel}. Copy the message, then open the profile (or official site) and paste into their contact form.`;
         });
       });
 
-      // default: disable contact button until selection
-      setContactButton("");
+      // Disable until selection
+      setOpenProfileButton("");
       $("selectedRepLabel").textContent = "";
     }
 
-    // Lookup button
+    // ---------- Events ----------
     $("lookupBtn").addEventListener("click", async () => {
-      const address = $("addressInput").value.trim();
-      if (!address) {
-        $("status").textContent = "Please enter a full address.";
+      const zip = $("zipInput").value.trim();
+
+      if (!/^\d{5}$/.test(zip)) {
+        $("status").textContent = "Please enter a valid 5-digit ZIP code.";
         return;
       }
 
       $("status").textContent = "Looking up representatives...";
       $("repResults").innerHTML = "<p class='muted'>Loading…</p>";
-      setContactButton("");
+      setOpenProfileButton("");
 
       try {
-        const data = await lookupLegisletter(address);
-        renderReps(data);
+        const { lat, lng, city, state } = await zipToLatLng(zip);
+        const data = await lookupPeopleGeo(lat, lng);
+        renderPeople(data.results || [], `${city}, ${state}`);
         $("status").textContent = "Click a representative to fill the template with their name.";
       } catch (e) {
         $("repResults").innerHTML = "";
@@ -327,7 +398,6 @@ Sincerely,
       }
     });
 
-    // Copy button
     $("copyBtn").addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText($("templateBox").value);
@@ -335,6 +405,11 @@ Sincerely,
       } catch {
         $("status").textContent = "Copy failed (browser blocked). Select text and copy manually.";
       }
+    });
+
+    // Enter key support
+    $("zipInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") $("lookupBtn").click();
     });
   </script>
 </body>
