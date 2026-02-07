@@ -112,6 +112,7 @@
 
     <script>
 let selectedLayer = null;
+let selectedStateName = null;
 
 const stateStyle = {
   fillColor: "#4c5c96",
@@ -310,15 +311,19 @@ function highlightState(layer) {
 function onEachFeature(feature, layer) {
     layer.on({
         mouseover: (e) => {
+            const stateName = feature.properties.name
             if (activeLayer !== e.target) e.target.setStyle({ fillOpacity: 0.8, color: '#fff' });
+            if (!selectedStateName) document.getElementById('district-title').innerText = stateName;
         },
         mouseout: (e) => {
             if (activeLayer !== e.target) geojson.resetStyle(e.target);
+            if (!selectedStateName) document.getElementById('district-title').innerText = "Select a Region";
         },
         click: (e) => {
             L.DomEvent.stopPropagation(e);
 
             const stateName = feature.properties.name;
+            selectedStateName = stateName;
             document.getElementById('district-title').innerText = stateName;
 
             loadBills(stateName);
