@@ -17,6 +17,14 @@
     </style>
 </head>
 <body class="is-preload">
+    <div id="state-loader">
+        <div class="loader-ring"></div>
+        <p id="loader-text">
+            <span class="loader-message">Loading </span><span class="dots"></span>
+        </p>
+    </div>
+
+
     <div id="page-wrapper">
         <header id="header">
             <h1><a href="index.html">Legislation Tracker</a></h1>
@@ -128,6 +136,40 @@
             }
         }
 
+        let loaderTimeout;
+
+        function showLoader(label = "Loading") {
+            const loader = document.getElementById("state-loader");
+            const text = document.querySelector(".loader-message");
+
+            loader.classList.add("active");
+
+            text.style.animation = "none";
+            text.textContent = label;
+            void text.offsetHeight;
+
+            text.style.animation =
+                "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+
+            loaderTimeout = setTimeout(() => {
+                text.style.animation = "loaderTextOut 0.45s ease forwards";
+
+                setTimeout(() => {
+                text.style.animation = "none";
+                text.textContent = "One moment please…";
+                void text.offsetHeight;
+                text.style.animation =
+                    "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+                }, 450);
+            }, 4000);
+        }
+
+        function hideLoader() {
+        clearTimeout(loaderTimeout);
+        document.getElementById("state-loader").classList.remove("active");
+        }
+
+
         async function loadMoreBills() {
             currentPage++;
             const urlParams = new URLSearchParams(window.location.search);
@@ -136,6 +178,10 @@
         }
 
         async function loadBills(stateAbbr, isAppending = false) {
+            const stateName = stateMap[stateAbbr] || "Legislation";
+            showLoader(`Loading ${stateName}`);
+
+
             if (isFetching || !stateAbbr) return;
             isFetching = true;
 
@@ -194,6 +240,7 @@
                     grid.innerHTML = `<p>Error loading legislation: ${err.message}.</p>`;
                 }
             } finally {
+                hideLoader();
                 isFetching = false;
             }
         }
