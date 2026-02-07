@@ -1,0 +1,293 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Find Legislators by ZIP - Solid State</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+    <style>
+        /* Custom Styles for Results */
+        #selector-area { margin-bottom: 2rem; padding: 2rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+        
+        #results-grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 2rem; 
+            min-height: 200px;
+        }
+
+        .legislator-card {
+            background: rgba(255,255,255,0.05);
+            padding: 1.5rem;
+            border-radius: 8px;
+            flex: 1 1 300px; /* Responsive width */
+            border-left: 4px solid #888;
+        }
+
+        .legislator-photo { 
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            margin-bottom: 1rem; 
+            border: 2px solid rgba(255,255,255,0.2); 
+            background: #333;
+        }
+
+        .party-democrat { border-left-color: #3498db !important; }
+        .party-democrat strong { color: #3498db; }
+        
+        .party-republican { border-left-color: #e74c3c !important; }
+        .party-republican strong { color: #e74c3c; }
+
+        .search-container { display: flex; gap: 10px; align-items: flex-end; }
+        
+        /* Debug Box Style */
+        #debug-log {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #222;
+            border: 1px solid #444;
+            font-family: monospace;
+            font-size: 0.8rem;
+            display: none; /* Hidden by default */
+            color: #ccc;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="is-preload">
+    <div id="page-wrapper">
+        <header id="header">
+            <h1><a href="index.html">Legislation Tracker</a></h1>
+            <nav><a href="#menu">Menu</a></nav>
+        </header>
+
+        <nav id="menu">
+            <div class="inner">
+                <h2>Menu</h2>
+                <ul class="links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="zip-legislators.html">Find My Legislators</a></li>
+                </ul>
+                <a href="#" class="close">Close</a>
+            </div>
+        </nav>
+
+        <section id="wrapper">
+            <header>
+                <div class="inner">
+                    <h2>Find Your Legislators</h2>
+                    <p>Enter your ZIP code to see who represents you at the state level.</p>
+                </div>
+            </header>
+
+            <div class="wrapper">
+                <div class="inner">
+                    
+                    <div id="selector-area">
+                        <div class="row gtr-uniform search-container">
+                            <div class="col-8 col-12-xsmall">
+                                <label for="zip-input">Enter 5-Digit ZIP Code</label>
+                                <input type="text" id="zip-input" placeholder="e.g. 90210" maxlength="5">
+                            </div>
+                            <div class="col-4 col-12-xsmall">
+                                <button class="button primary fit" onclick="searchByZip()">Search</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="major" id="results-header">Results</h3>
+                    <section id="results-grid">
+                        <p>Enter a ZIP code above to find your representatives.</p>
+                    </section>
+
+                    <div id="debug-log"></div>
+
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/browser.min.js"></script>
+    <script src="assets/js/breakpoints.min.js"></script>
+    <script src="assets/js/util.js"></script>
+    <script src="assets/js/main.js"></script>
+    
+    <script src="config.js"></script>
+
+    <script>
+      // --- CONFIGURATION ---
+      // If config.js is missing, put your key here manually:
+      const MANUAL_KEY = 'YOUR_OPENSTATES_API_KEY_HERE'; 
+      
+      // Logic to pick the right key
+      const API_KEY = (typeof CONFIG !== 'undefined' && CONFIG.PLURAL_API_KEY) ? CONFIG.PLURAL_API_KEY : MANUAL_KEY;
+  
+      // --- RATE LIMIT PROTECTION ---
+      let lastSearchTime = 0;
+      const COOLDOWN_MS = 2000; // 2 seconds between searches
+  
+      // --- DEBUG FUNCTION ---
+      function logDebug(message) {
+          const debugBox = document.getElementById('debug-log');
+          debugBox.style.display = 'block';
+          debugBox.innerHTML += `> ${message}\n`;
+          console.log(message);
+      }
+  
+      async function searchByZip() {
+          const now = Date.now();
+          const grid = document.getElementById('results-grid');
+          const debugBox = document.getElementById('debug-log');
+          
+          // 1. Rate Limit Check
+          if (now - lastSearchTime < COOLDOWN_MS) {
+              alert("Please wait a moment before searching again.");
+              return;
+          }
+          lastSearchTime = now;
+  
+          const zipInput = document.getElementById('zip-input').value.trim();
+          
+          // Clear previous results
+          grid.innerHTML = "<p>Locating ZIP code coordinates...</p>";
+          debugBox.innerHTML = ""; // Clear debug log
+          debugBox.style.display = 'none';
+  
+          if (!/^\d{5}$/.test(zipInput)) {
+              grid.innerHTML = "<p>Please enter a valid 5-digit ZIP code.</p>";
+              return;
+          }
+  
+          try {
+              // Check if Key is setup
+              if (API_KEY === 'YOUR_OPENSTATES_API_KEY_HERE' || !API_KEY) {
+                  throw new Error("API Key is missing. Please check your config.js file.");
+              }
+  
+              logDebug(`Step 1: Fetching coordinates for ZIP ${zipInput}`);
+  
+              // Step 1: Get Lat/Lng from Zippopotam.us
+              const geoResponse = await fetch(`https://api.zippopotam.us/us/${zipInput}`);
+              if (!geoResponse.ok) throw new Error("ZIP code not found in database.");
+              
+              const geoData = await geoResponse.json();
+              const place = geoData.places[0];
+              const lat = parseFloat(place.latitude);
+              const lng = parseFloat(place.longitude);
+              
+              logDebug(`Coordinates found: ${lat}, ${lng} (${place['place name']})`);
+  
+              // Step 2: Fetch Legislators from OpenStates V3
+              await fetchLegislators(lat, lng, `${place['place name']}, ${place['state abbreviation']}`);
+  
+          } catch (err) {
+              console.error(err);
+              grid.innerHTML = `<p style="color: #ff9999;">Error: ${err.message}</p>`;
+              logDebug(`CRITICAL ERROR: ${err.message}`);
+          }
+      }
+  
+      async function fetchLegislators(lat, lng, locationLabel) {
+    const grid = document.getElementById('results-grid');
+    grid.innerHTML = `<p>Searching for representatives in <strong>${locationLabel}</strong>...</p>`;
+
+    try {
+        // 1. Ensure lat/lng are clean numbers and fixed to 4 decimal places
+        // This prevents "value_error.missing" which happens if the values are null or undefined
+        const cleanLat = parseFloat(lat).toFixed(4);
+        const cleanLng = parseFloat(lng).toFixed(4);
+
+        // 2. We'll use the short parameter names 'lat' and 'lng' as per V3 strict mode
+        // and ensure the API key is appended correctly
+        const url = `https://v3.openstates.org/people.geo?lat=${cleanLat}&lng=${cleanLng}&apikey=${API_KEY}`;
+        
+        logDebug(`Requesting: ${url}`);
+
+        const response = await fetch(url);
+        
+        if (response.status === 429) {
+            throw new Error("Rate limit reached. Please wait 60 seconds.");
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            // This will catch the "field required" error and show it in the debug log
+            console.error("API Error Detail:", errorData);
+            throw new Error(`Server Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data && data.results && data.results.length > 0) {
+            renderLegislators(data.results);
+        } else {
+            grid.innerHTML = `<p>No legislators found at these coordinates (${cleanLat}, ${cleanLng}).</p>`;
+        }
+
+    } catch (err) {
+        logDebug(`FETCH ERROR: ${err.message}`);
+        grid.innerHTML = `<p style="color: #ff9999;">${err.message}</p>`;
+    }
+}
+  
+      function renderLegislators(people) {
+          const grid = document.getElementById('results-grid');
+          
+          const cards = people.map(person => {
+              const photo = person.image || 'assets/images/placeholder.png'; // Make sure you have a placeholder or use a generic URL
+              const party = person.party || 'Independent';
+              
+              // Determine CSS class based on party
+              let partyClass = '';
+              let partyColor = '#777';
+              
+              if (party.includes('Democratic')) {
+                  partyClass = 'party-democrat';
+                  partyColor = '#3498db';
+              }
+              if (party.includes('Republican')) {
+                  partyClass = 'party-republican';
+                  partyColor = '#e74c3c';
+              }
+  
+              // Safely access nested role data
+              const role = person.current_role || {};
+              const chamber = role.org_classification === 'lower' ? 'State Representative' : 
+                              role.org_classification === 'upper' ? 'State Senator' : 'Legislator';
+              
+              const district = role.district || 'Unknown District';
+              const profileUrl = person.openstates_url || '#';
+  
+              return `
+                  <article class="legislator-card ${partyClass}" style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; flex: 1 1 300px; border-left: 4px solid ${partyColor}; margin-bottom: 1rem;">
+                      <img src="${photo}" alt="${person.name}" class="legislator-photo" 
+                           style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 2px solid rgba(255,255,255,0.2);"
+                           onerror="this.onerror=null;this.src='https://via.placeholder.com/100?text=No+Img';">
+                      
+                      <h3 class="major" style="margin-bottom: 0.5rem;">${person.name}</h3>
+                      
+                      <p style="margin-bottom: 1rem; font-size: 0.9em; line-height: 1.5;">
+                          <strong style="color:${partyColor}">${party}</strong><br>
+                          ${chamber}<br>
+                          District: ${district}
+                      </p>
+                      
+                      <a href="${profileUrl}" target="_blank" class="button small">View Profile</a>
+                  </article>
+              `;
+          }).join('');
+  
+          grid.innerHTML = cards;
+      }
+  
+      // Enter key support
+      document.getElementById('zip-input').addEventListener('keypress', function (e) {
+          if (e.key === 'Enter') searchByZip();
+      });
+  </script>
+</body>
+</html>
