@@ -4154,6 +4154,7 @@ input, select, textarea {
 		}
 
 	}
+
 #banner {
   position: relative;
   overflow: hidden;
@@ -4188,3 +4189,124 @@ input, select, textarea {
 .leaflet-tile {
   opacity: 0.2;
 }
+/* =========================
+   State Loading Overlay
+========================= */
+
+#state-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 34, 51, 0.92);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+#state-loader.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+/* Loader text */
+#state-loader p {
+  margin-top: 1.2rem;
+  font-family: Raleway, Helvetica, sans-serif;
+  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Spinner — FORCED */
+#state-loader .loader-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.95);
+
+  animation: spin 0.9s linear infinite !important;
+  will-change: transform;
+}
+
+/* Keyframes MUST exist */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Breathing background */
+#state-loader.active {
+  animation: loaderPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes loaderPulse {
+  0%   { background-color: rgba(31, 34, 51, 0.92); }
+  50%  { background-color: rgba(31, 34, 51, 0.88); }
+  100% { background-color: rgba(31, 34, 51, 0.92); }
+}
+
+/* Loader text container */
+#loader-text {
+  margin-top: 1.2rem;
+  overflow: hidden;
+}
+
+.loader-message {
+  display: inline-block;
+  opacity: 1; /* IMPORTANT: visible by default */
+}
+
+/* Fade + slide in */
+@keyframes loaderTextIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade + slide out */
+@keyframes loaderTextOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.leaflet-interactive.selected {
+  animation: selectedPulse 2s ease-in-out infinite;
+}
+
+@keyframes selectedPulse {
+  0%   { fill-opacity: 0.9; }
+  50%  { fill-opacity: 0.75; }
+  100% { fill-opacity: 0.9; }
+}
+
+.selected-state-label span {
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-align: center;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.leaflet-interactive {
+  transition: all 0.25s ease;
+}
+

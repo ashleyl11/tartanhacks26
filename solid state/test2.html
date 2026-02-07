@@ -39,6 +39,14 @@
     </style>
 </head>
 <body class="is-preload">
+    <div id="state-loader">
+        <div class="loader-ring"></div>
+        <p id="loader-text">
+            <span class="loader-message">Loading</span><span class="dots"></span>
+        </p>
+
+    </div>
+
 
     <div id="page-wrapper">
         <header id="header">
@@ -88,6 +96,75 @@
 <script src="config.js"></script>
 
     <script>
+let selectedLayer = null;
+
+const stateStyle = {
+  fillColor: "#4c5c96",
+  weight: 1,
+  color: "white",
+  fillOpacity: 0.3
+};
+
+const hoverStyle = {
+  fillOpacity: 0.75,
+  color: "#ffffff"
+};
+
+const selectedStyle = {
+  fillColor: "#8fa2ff",
+  fillOpacity: 0.9,
+  weight: 2,
+  color: "#ffffff"
+};
+
+
+let loaderTimeout;
+
+function showLoader(stateName) {
+  const loader = document.getElementById("state-loader");
+  const text = document.querySelector(".loader-message");
+
+  loader.classList.add("active");
+
+  // Reset animation
+  text.style.animation = "none";
+  text.textContent = `Loading ${stateName}`;
+
+  // Force reflow
+  void text.offsetHeight;
+
+  // Animate in
+  text.style.animation = "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+
+  loaderTimeout = setTimeout(() => {
+    // Animate out
+    text.style.animation = "loaderTextOut 0.45s ease forwards";
+
+    setTimeout(() => {
+      text.style.animation = "none";
+      text.textContent = `Still working on ${stateName}`;
+
+      void text.offsetHeight;
+
+      text.style.animation =
+        "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+    }, 450);
+  }, 4000);
+}
+
+
+
+
+
+function hideLoader() {
+  clearTimeout(loaderTimeout);
+  document.getElementById("state-loader").classList.remove("active");
+}
+
+
+
+      // --- 1. THE CONFIG & MAP ---
+const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd'; 
 
 
       // --- 1. THE CONFIG & MAP ---
@@ -106,9 +183,28 @@ const stateMap = {
 
 // Initialize Map with special options for heavy themes
 const map = L.map('map', {
-    scrollWheelZoom: false, // Prevents map from stealing page scroll
-    tap: false // Helps mobile clicks in heavy templates
+  dragging: true,
+  scrollWheelZoom: false, // keep zoom OFF
+  doubleClickZoom: false,
+  tap: false,
+  inertia: true
 }).setView([37.8, -96], 4);
+
+map.getContainer().addEventListener("wheel", function (e) {
+  e.preventDefault();
+
+  const deltaX = e.deltaX;
+  const deltaY = e.deltaY;
+
+  // Pan speed (tweak if needed)
+  const panFactor = 1;
+
+  map.panBy([deltaX * panFactor, deltaY * panFactor], {
+    animate: false
+  });
+}, { passive: false });
+
+
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; CARTO'
@@ -128,12 +224,13 @@ async function loadBills(stateName) {
     const stateId = stateMap[stateName];
     if (!stateId) return;
 
-    listDiv.innerHTML = '<p class="loading-text">Loading ' + stateName + ' bills...</p>';
+    showLoader(stateName); // 👈 SHOW LOADER
+
+    listDiv.innerHTML = '<p class="loading-text">Fetching legislation…</p>';
 
     try {
         const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateId}/government`;
-        // Broad search: Removing 'session' to ensure we get results regardless of time of year
-        const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=5&apikey=${apikey}`;
+        const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=5&apikey=${PLURAL_API_KEY}`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
         const response = await fetch(proxyUrl);
@@ -166,41 +263,82 @@ async function loadBills(stateName) {
         }
     } catch (err) {
         listDiv.innerHTML = "<p>API Error. Check console (F12).</p>";
+    } finally {
+        hideLoader(); // 👈 ALWAYS HIDE LOADER
     }
 }
 
 // --- 3. INTERACTIONS ---
 let geojson;
+let activeLabel = null;
+let activeLayer = null;
+
+function highlightState(layer) {
+  if (activeLayer && activeLayer !== layer) {
+    geojson.resetStyle(activeLayer);
+  }
+  if (activeLabel) map.removeLayer(activeLabel);
+
+  layer.setStyle({
+    fillColor: '#8fa2ff',
+    fillOpacity: 0.8,
+    color: 'white',
+    weight: 2
+  });
+
+  activeLayer = layer;
+}
+
+
+
+
 function onEachFeature(feature, layer) {
     layer.on({
-        mouseover: (e) => e.target.setStyle({ fillOpacity: 0.8, color: '#fff' }),
-        mouseout: (e) => geojson.resetStyle(e.target),
+        mouseover: (e) => {
+            if (activeLayer !== e.target) e.target.setStyle({ fillOpacity: 0.8, color: '#fff' });
+        },
+        mouseout: (e) => {
+            if (activeLayer !== e.target) geojson.resetStyle(e.target);
+        },
         click: (e) => {
-            // Stop theme from reacting to this click
             L.DomEvent.stopPropagation(e);
-            
+
             const stateName = feature.properties.name;
             document.getElementById('district-title').innerText = stateName;
+
             loadBills(stateName);
             map.fitBounds(e.target.getBounds());
+
+            highlightState(e.target); // handle highlight + label
         }
     });
 }
+
+
+
 
 // --- 4. LOAD DATA ---
 fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
     .then(res => res.json())
     .then(data => {
         geojson = L.geoJSON(data, {
-            style: { fillColor: "#4c5c96", weight: 1, color: 'white', fillOpacity: 0.3 },
-            onEachFeature: onEachFeature
-        }).addTo(map);
+        style: { fillColor: "#4c5c96", weight: 1, color: 'white', fillOpacity: 0.3 },
+        onEachFeature: function(feature, layer) {
+            onEachFeature(feature, layer); // your hover/click handlers
+        }
+    }).addTo(map);
+
+
     });
+
+layer.getElement()?.classList.add("selected");
+
 
 // THE THEME FIX: Wait for Solid State's animations to finish before sizing the map
 window.addEventListener('load', () => {
     setTimeout(() => { map.invalidateSize(); }, 500);
 });
+
     </script>
 </body>
 </html>
