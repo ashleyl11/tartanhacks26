@@ -26,7 +26,7 @@
                 <h2>Menu</h2>
                 <ul class="links">
                     <li><a href="index.html">Home</a></li>
-                    <li><a href="test2.html">Interactive Map</a></li>
+                    <li><a href="map.html">Interactive Map</a></li>
                     <li><a href="allbills.html">All Recent Legislation</a></li>
                 </ul>
                 <a href="#" class="close">Close</a>
@@ -80,7 +80,7 @@
 
     <script>
         // Use a fallback to prevent the whole script from crashing if config.js fails
-        const PLURAL_API_KEY = typeof CONFIG !== 'undefined' ? CONFIG.PLURAL_API_KEY : 'MISSING_KEY';
+        const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY;
         let allLoadedBills = []; 
 
         const stateMap = {
