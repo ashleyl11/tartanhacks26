@@ -12,6 +12,8 @@
         .hidden { display: none !important; }
         /* Ensure the grid doesn't collapse */
         #bill-grid { min-height: 200px; }
+        /* Center the load more button */
+        #load-more-container { text-align: center; margin-top: 2rem; padding-bottom: 2rem; }
     </style>
 </head>
 <body class="is-preload">
@@ -26,7 +28,7 @@
                 <h2>Menu</h2>
                 <ul class="links">
                     <li><a href="index.html">Home</a></li>
-                    <li><a href="map.html">Interactive Map</a></li>
+                    <li><a href="test2.html">Interactive Map</a></li>
                     <li><a href="allbills.html">All Recent Legislation</a></li>
                 </ul>
                 <a href="#" class="close">Close</a>
@@ -60,10 +62,15 @@
                     </div>
 
                     <h3 class="major" id="grid-header">Recent Bills</h3>
+                    
                     <section class="features" id="bill-grid">
                         </section>
 
-                    <ul class="actions" style="margin-top: 3rem;">
+                    <div id="load-more-container" class="hidden">
+                        <button id="load-more-btn" class="button primary" onclick="loadMoreBills()">Load More Bills</button>
+                    </div>
+
+                    <ul class="actions" style="margin-top: 3rem; border-top: solid 2px rgba(255, 255, 255, 0.1); padding-top: 2rem;">
                         <li><a href="map.html" class="button">Back to Map</a></li>
                     </ul>
                 </div>
@@ -79,9 +86,11 @@
     <script src="config.js"></script>
 
     <script>
-        // Use a fallback to prevent the whole script from crashing if config.js fails
         const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY;
+        
         let allLoadedBills = []; 
+        let currentPage = 1;
+        let isFetching = false;
 
         const stateMap = {
             "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas", "ca": "California",
@@ -111,67 +120,94 @@
             if (selectedState) {
                 const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?state=' + selectedState;
                 window.history.pushState({path:newurl},'',newurl);
-                loadAllBills(selectedState);
+                
+                // RESET for new state selection
+                allLoadedBills = [];
+                currentPage = 1;
+                loadBills(selectedState, false);
             }
         }
 
-        async function loadAllBills(forcedState = null) {
+        async function loadMoreBills() {
+            currentPage++;
             const urlParams = new URLSearchParams(window.location.search);
-            const stateAbbr = forcedState || urlParams.get('state');
+            const stateAbbr = urlParams.get('state');
+            await loadBills(stateAbbr, true);
+        }
+
+        async function loadBills(stateAbbr, isAppending = false) {
+            if (isFetching || !stateAbbr) return;
+            isFetching = true;
+
             const grid = document.getElementById('bill-grid');
             const pageTitle = document.getElementById('state-page-title');
-
-            if (!stateAbbr) {
-                pageTitle.innerText = "Select a State";
-                grid.innerHTML = "<p>Please choose a state above to view recent legislation.</p>";
-                return;
-            }
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const loadMoreContainer = document.getElementById('load-more-container');
 
             document.getElementById('state-dropdown').value = stateAbbr;
             const fullStateName = stateMap[stateAbbr] || "State";
             pageTitle.innerText = `${fullStateName} Legislation`;
 
-            try {
+            if (!isAppending) {
                 grid.innerHTML = "<p>Loading bills...</p>";
-                
-                // Construct Jurisdiction ID for Open States V3
+                loadMoreContainer.classList.add('hidden');
+            } else {
+                loadMoreBtn.innerText = "Fetching more...";
+            }
+
+            try {
                 const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateAbbr}/government`;
                 
-                // Use per_page=20 to keep initial load fast
-                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=20&apikey=${PLURAL_API_KEY}`;
+                // Pagination added: page=${currentPage}
+                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=20&page=${currentPage}&apikey=${PLURAL_API_KEY}`;
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
                 const response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error("Could not connect to the API proxy.");
                 
                 const data = await response.json();
-                console.log("API Data received:", data); // Check this in your browser console
 
-                if (data && data.results) {
-                    allLoadedBills = data.results; 
-                    renderGrid(allLoadedBills, stateAbbr);
+                if (data && data.results && data.results.length > 0) {
+                    // Update our data store
+                    allLoadedBills = isAppending ? [...allLoadedBills, ...data.results] : data.results;
+                    
+                    // Render the current view (passing current filter if any)
+                    filterBills();
+
+                    // Manage "Load More" button visibility
+                    if (data.results.length === 20) {
+                        loadMoreContainer.classList.remove('hidden');
+                        loadMoreBtn.innerText = "Load More Bills";
+                    } else {
+                        // Less than 20 items means we hit the end of the list
+                        loadMoreContainer.classList.add('hidden');
+                    }
                 } else {
-                    grid.innerHTML = "<p>No bills found for this state.</p>";
+                    if (!isAppending) {
+                        grid.innerHTML = "<p>No bills found for this state.</p>";
+                    }
+                    loadMoreContainer.classList.add('hidden');
                 }
             } catch (err) {
                 console.error("Error fetching bills:", err);
-                grid.innerHTML = `<p>Error loading legislation: ${err.message}. Please refresh or try another state.</p>`;
+                if (!isAppending) {
+                    grid.innerHTML = `<p>Error loading legislation: ${err.message}.</p>`;
+                }
+            } finally {
+                isFetching = false;
             }
         }
 
         function renderGrid(bills, state) {
             const grid = document.getElementById('bill-grid');
             if (!bills || bills.length === 0) {
-                grid.innerHTML = "<p>No bills found matching your criteria.</p>";
+                grid.innerHTML = "<p>No bills match your current filter.</p>";
                 return;
             }
 
             grid.innerHTML = bills.map(bill => {
-                // Open States V3 property paths:
                 const billTitle = bill.title || "No title provided";
                 const truncatedTitle = billTitle.length > 150 ? billTitle.substring(0, 150) + "..." : billTitle;
-                
-                // Latest action is nested in an object
                 const latestAction = bill.latest_action ? bill.latest_action.description : 'Recently updated';
 
                 return `
@@ -201,7 +237,14 @@
 
         window.onload = () => {
             populateDropdown();
-            loadAllBills();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const stateAbbr = urlParams.get('state');
+            if (stateAbbr) {
+                loadBills(stateAbbr);
+            } else {
+                document.getElementById('bill-grid').innerHTML = "<p>Please choose a state above to view recent legislation.</p>";
+            }
         };
     </script>
 </body>
