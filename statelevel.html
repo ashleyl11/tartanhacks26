@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Legislation Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #map { width: 100vw; height: 100vh; }
+    /* Style for the info box */
+    .info-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="details" class="info-panel">
+  <h3>District Info</h3>
+  <p>Click a region to see legislation.</p>
+</div>
+
+<script>
+  // 1. Center the map on the US instead of a specific city
+  const map = L.map("map").setView([37.8, -96], 4);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap contributors",
+  }).addTo(map);
+
+  // 2. This function runs for every "district" (feature) in your GeoJSON
+  function onEachFeature(feature, layer) {
+    layer.on({
+      mouseover: (e) => {
+        const layer = e.target;
+        layer.setStyle({ weight: 3, color: '#666', fillOpacity: 0.7 });
+      },
+      mouseout: (e) => {
+        geojson.resetStyle(e.target);
+      },
+      click: (e) => {
+        const name = feature.properties.name; // 'name' comes from the GeoJSON data
+        document.getElementById('details').innerHTML = `
+          <h3>${name}</h3>
+          <p>Legislation pending: <b>Bill HR-123</b></p>
+          <button onclick="alert('Opening Email Template for ${name}...')">Email Legislature</button>
+        `;
+        // Zoom to the clicked district
+        map.fitBounds(e.target.getBounds());
+      }
+    });
+  }
+
+  // 3. Fetching a sample GeoJSON of US States
+  // In a real hackathon, replace this URL with your specific District GeoJSON
+  let geojson;
+  fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+    .then(response => response.json())
+    .then(data => {
+      geojson = L.geoJSON(data, {
+        style: {
+          fillColor: "#3388ff",
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          fillOpacity: 0.4
+        },
+        onEachFeature: onEachFeature
+      }).addTo(map);
+    });
+</script>
+
+</body>
+</html>
