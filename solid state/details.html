@@ -113,6 +113,8 @@
                         <ul class="actions">
                             <li><a href="allbills.html" class="button">Back to List</a></li>
                             <li><a id="official-link" href="#" target="_blank" class="button primary">View Full Law</a></li>
+                              <li><button id="contact-btn" class="button">Contact Representative</button></li>
+
                         </ul>
                     </div>
 
@@ -214,6 +216,12 @@
             document.getElementById('bill-summary-text').innerText = bill.title; 
             document.getElementById('bill-status').innerText = bill.latest_action_description || "Active";
             document.getElementById('official-link').href = bill.openstates_url;
+
+            const contactBtn = document.getElementById("contact-btn");
+contactBtn.onclick = () => {
+  window.location.href =
+    `contact.html?billId=${encodeURIComponent(bill.identifier)}&billTitle=${encodeURIComponent(bill.title)}`;
+};
 
             // Facts
             const facts = document.getElementById('bill-facts');
