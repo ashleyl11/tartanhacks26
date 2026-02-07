@@ -1,3 +1,7 @@
 const CONFIG = {
-  PLURAL_API_KEY: '6b0c1f35-a54f-479e-b78c-7b73c4a7cbff'
+  PLURAL_API_KEY: '4f193253-bec5-4b5c-ae14-eee0352b9818'
 };
+
+window.CONFIG = { PLURAL_API_KEY: '4f193253-bec5-4b5c-ae14-eee0352b9818',
+  LEGISLETTER_KEY: 'll-sk-e4fe385b9be4a202c7132585df9bf44c2d3544662e4015f285b6dcd69219c0eb' };
+
