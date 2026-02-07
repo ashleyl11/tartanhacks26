@@ -1,31 +1,19 @@
-Solid State by HTML5 UP
-html5up.net | @ajlkn
-Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+Solid State by 10:30
 
 
-After a somewhat extended break from HTML5 UP (to work on a secret-ish new project --
-more on that later!) I'm back with a brand new design: Solid State, a slick new multi-
-pager that combines some of the ideas I've played with over at Pixelarity with an "angular"
-sort of look. Hope you dig it :)
+Solid State is an informative website that tracks recent U.S legislations by state.
+Users can explore laws, view detailed summaries, check legislators, and get in contact with them.
+This app uses OpenStates API for real-time data.
 
-Demo images* courtesy of Unsplash, a radtastic collection of CC0 (public domain) images
-you can use for pretty much whatever.
+API sources:
+- [OpenStates API](https://open.pluralpolicy.com/) - Laws and legislators data
 
-(* = not included)
-
-AJ
-aj@lkn.io | @ajlkn
-
-
-Credits:
-
-	Demo Images:
-		Unsplash (unsplash.com)
-
-	Icons:
-		Font Awesome (fontawesome.io)
-
-	Other:
-		jQuery (jquery.com)
-		Scrollex (github.com/ajlkn/jquery.scrollex)
-		Responsive Tools (github.com/ajlkn/responsive-tools)
+Project Structure
+- `index.html` – Landing page
+- `map.html` – Interactive U.S. map with bill data
+- `allbills.html` – List of all bills
+- `details.html` – Detailed view of a single bill
+- `contact.html` – Contact legislators from bill
+- `legislators.html` – Find legislators based on your region
+- `assets/css/` – Stylesheets
+- `assets/js/` – JavaScript files
