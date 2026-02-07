@@ -137,19 +137,15 @@ async function loadBills(stateName) {
         if (data.results && data.results.length > 0) {
             let html = "";
             data.results.forEach(bill => {
-    // We send the bill ID and the jurisdiction through the URL
-    const stateId = stateMap[stateName];
-    const detailLink = `details.html?bill_id=${bill.identifier}&state=${stateId}`;
-
-    html += `
-        <div class="legislation-card">
-            <h4>${bill.identifier}</h4>
-            <p>${bill.title.substring(0, 100)}...</p>
-            <ul class="actions">
-                <li><a href="${detailLink}" class="button primary small">View Details</a></li>
-            </ul>
-        </div>`;
-});
+                html += `
+                    <div class="legislation-card">
+                        <h4>${bill.identifier}</h4>
+                        <p>${bill.title.substring(0, 100)}...</p>
+                        <ul class="actions" style="margin-top:10px;">
+                            <li><a href="mailto:rep@state.gov?subject=Regarding ${bill.identifier}" class="button primary small">Email Rep</a></li>
+                        </ul>
+                    </div>`;
+            });
             listDiv.innerHTML = html;
         } else {
             listDiv.innerHTML = `<p>No recent activity found for ${stateName}.</p>`;
