@@ -85,11 +85,12 @@
     <script src="assets/js/util.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="config.js"></script>
 
     <script>
-      // --- 1. THE CONFIG & MAP ---
-const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd'; 
 
+
+      // --- 1. THE CONFIG & MAP ---
 const stateMap = {
     "Alabama": "al", "Alaska": "ak", "Arizona": "az", "Arkansas": "ar", "California": "ca",
     "Colorado": "co", "Connecticut": "ct", "Delaware": "de", "Florida": "fl", "Georgia": "ga",
@@ -116,6 +117,10 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 // IMPORTANT: Tell the theme not to intercept clicks on the map div
 const mapDiv = document.getElementById('map');
 L.DomEvent.disableClickPropagation(mapDiv);
+        
+
+
+const apikey= CONFIG.PLURAL_API_KEY;
 
 // --- 2. FETCH FUNCTION (Guaranteed Fallback) ---
 async function loadBills(stateName) {
@@ -128,7 +133,7 @@ async function loadBills(stateName) {
     try {
         const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateId}/government`;
         // Broad search: Removing 'session' to ensure we get results regardless of time of year
-        const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=5&apikey=${PLURAL_API_KEY}`;
+        const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=5&apikey=${apikey}`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
         const response = await fetch(proxyUrl);
