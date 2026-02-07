@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Map - Solid State</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+
+    <style>
+        /* Custom tweaks to make the map look native */
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .legislation-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #4c5c96;
+        }
+        #legislation-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="is-preload">
+
+    <div id="page-wrapper">
+
+        <header id="header">
+            <h1><a href="index.html">LegisMap</a></h1>
+            <nav><a href="#menu">Menu</a></nav>
+        </header>
+
+        <nav id="menu">
+            <div class="inner">
+                <h2>Menu</h2>
+                <ul class="links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="#">About the Project</a></li>
+                    <li><a href="#">Legislation Data</a></li>
+                </ul>
+                <a href="#" class="close">Close</a>
+            </div>
+        </nav>
+
+        <section id="wrapper">
+            <header>
+                <div class="inner">
+                    <h2>District Legislation Tracker</h2>
+                    <p>Hover to explore, click to see pending bills and contact your representative.</p>
+                </div>
+            </header>
+
+            <div class="wrapper">
+                <div class="inner">
+                    <div class="row">
+                        <div class="col-7 col-12-medium">
+                            <h3 class="major">Interactive Map</h3>
+                            <div id="map"></div>
+                        </div>
+
+                        <div class="col-5 col-12-medium">
+                            <h3 class="major" id="district-title">Select a Region</h3>
+                            <div id="legislation-list">
+                                <p>Please click on a district on the map to see the current legislative agenda for that area.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="footer">
+            <div class="inner">
+                <ul class="copyright">
+                    <li>&copy; Solid State. All rights reserved.</li>
+                    <li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/jquery.scrollex.min.js"></script>
+    <script src="assets/js/browser.min.js"></script>
+    <script src="assets/js/breakpoints.min.js"></script>
+    <script src="assets/js/util.js"></script>
+    <script src="assets/js/main.js"></script>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Initialize Map
+        const map = L.map('map').setView([37.8, -96], 4);
+
+        // 2. Add Dark Theme Tiles
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
+        }).addTo(map);
+
+        let geojson;
+
+        // 3. Define interactions
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: (e) => {
+                    const l = e.target;
+                    l.setStyle({ fillOpacity: 0.8, weight: 2, color: '#ffffff' });
+                },
+                mouseout: (e) => {
+                    geojson.resetStyle(e.target);
+                },
+                click: (e) => {
+                    const props = feature.properties;
+                    const districtName = props.name || "Unknown District";
+                    
+                    // Update Sidebar Content
+                    document.getElementById('district-title').innerText = districtName;
+                    document.getElementById('legislation-list').innerHTML = `
+                        <div class="legislation-card">
+                            <h4>Bill HR-2024: Climate Action</h4>
+                            <p>This bill aims to increase state-wide renewable energy targets by 20%.</p>
+                            <ul class="actions">
+                                <li><a href="mailto:rep@state.gov?subject=Support HR-2024&body=Dear Representative, as a resident of ${districtName}..." class="button primary small">Email Rep</a></li>
+                            </ul>
+                        </div>
+                        <div class="legislation-card">
+                            <h4>Bill SB-12: Education Reform</h4>
+                            <p>A bill to increase funding for local district K-12 schools.</p>
+                            <ul class="actions">
+                                <li><a href="mailto:rep@state.gov?subject=Support SB-12" class="button small">Email Rep</a></li>
+                            </ul>
+                        </div>
+                    `;
+                    map.fitBounds(e.target.getBounds());
+                }
+            });
+        }
+
+        // 4. Load the Data (Using US States as a placeholder for districts)
+        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+            .then(res => res.json())
+            .then(data => {
+                geojson = L.geoJSON(data, {
+                    style: {
+                        fillColor: "#2e3450", // Matches Solid State background
+                        weight: 1,
+                        opacity: 1,
+                        color: 'rgba(255,255,255,0.3)',
+                        fillOpacity: 0.5
+                    },
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+            });
+    </script>
+
+</body>
+</html>
