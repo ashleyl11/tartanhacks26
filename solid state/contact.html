@@ -107,6 +107,8 @@
 			</div>
 
 		<!-- Scripts -->
+         <script src="config.js"></script>
+
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/jquery.scrollex.min.js"></script>
 			<script src="assets/js/browser.min.js"></script>
@@ -122,6 +124,24 @@
 				scrollWheelZoom: false,
 				attributionControl: false
 			});
+
+            function generateTemplate({ repName, userCity, billNumber, billTitle, userName, userContact, wish, impact, harmedGroup, remedy }) {
+  const billRef = [billNumber, billTitle].filter(Boolean).join(", ");
+
+  return `Dear ${repName},
+
+I am a resident of ${userCity} and I am writing to express my strong disappointment regarding your vote in favor of ${billRef}.
+
+As a constituent, I believed this legislation would ${wish}, but instead, it ${impact}. This bill will directly harm ${harmedGroup}.
+
+I urge you to reconsider your position on this issue and to support ${remedy}.
+
+I look forward to seeing your actions in upcoming votes.
+
+Sincerely,
+${userName}
+${userContact}`.trim();
+}
 
 			// Minimal dark map
 			L.tileLayer(
