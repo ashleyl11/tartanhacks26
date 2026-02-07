@@ -103,6 +103,7 @@
                         </ul>
                     </div>
 
+
                 </div>
             </div>
         </section>
@@ -116,6 +117,7 @@
     <script src="assets/js/main.js"></script>
     <script src="config.js"></script>
 
+
     <script>
         const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY; 
 
@@ -124,9 +126,31 @@
             const billId = urlParams.get('bill_id');
             const state = urlParams.get('state');
 
+<<<<<<< HEAD
             if (!billId || !state) {
                 document.getElementById('bill-id-header').innerText = "Error: No Bill Selected";
                 return;
+=======
+                try {
+                    const jurisdictionId = `ocd-jurisdiction/country:us/state:${state}/government`;
+                    // Fetch specifically for this bill identifier
+                    const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&identifier=${encodeURIComponent(billId)}&include=sponsorships&include=actions&apikey=${apikey}`;
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+                    const response = await fetch(proxyUrl);
+                    const data = await response.json();
+                    const bill = data.results[0]; // Get the first match
+
+                    if (bill) {
+                        renderBill(bill);
+                    } else {
+                        throw new Error("Bill not found");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('bill-id-header').innerText = "Data Unavailable";
+                }
+>>>>>>> dfa20a7 (commit)
             }
 
             try {
