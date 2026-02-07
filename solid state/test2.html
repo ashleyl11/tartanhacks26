@@ -1,0 +1,187 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Map - Solid State</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+
+    <style>
+        /* Ensuring the map is visible and matches the theme */
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #2e3450; /* Solid State dark blue */
+        }
+        .legislation-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #4c5c96;
+        }
+        #legislation-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .loading-text {
+            font-style: italic;
+            color: #4c5c96;
+        }
+    </style>
+</head>
+<body class="is-preload">
+
+    <div id="page-wrapper">
+        <header id="header">
+            <h1><a href="index.html">SOLID STATE</a></h1>
+            <nav><a href="#menu">Menu</a></nav>
+        </header>
+
+        <section id="wrapper">
+            <header>
+                <div class="inner">
+                    <h2>District Legislation Tracker</h2>
+                    <p>Click a state to fetch real-time data from Plural Policy.</p>
+                </div>
+            </header>
+
+            <div class="wrapper">
+                <div class="inner">
+                    <div class="row">
+                        <div class="col-7 col-12-medium">
+                            <h3 class="major">Interactive Map</h3>
+                            <div id="map"></div>
+                        </div>
+
+                        <div class="col-5 col-12-medium">
+                            <h3 class="major" id="district-title">Select a Region</h3>
+                            <div id="legislation-list">
+                                <p>Click on a state to see the current legislative agenda.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/jquery.scrollex.min.js"></script>
+    <script src="assets/js/browser.min.js"></script>
+    <script src="assets/js/util.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+      // --- 1. THE CONFIG & MAP ---
+const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd'; 
+
+const stateMap = {
+    "Alabama": "al", "Alaska": "ak", "Arizona": "az", "Arkansas": "ar", "California": "ca",
+    "Colorado": "co", "Connecticut": "ct", "Delaware": "de", "Florida": "fl", "Georgia": "ga",
+    "Hawaii": "hi", "Idaho": "id", "Illinois": "il", "Indiana": "in", "Iowa": "ia",
+    "Kansas": "ks", "Kentucky": "ky", "Louisiana": "la", "Maine": "me", "Maryland": "md",
+    "Massachusetts": "ma", "Michigan": "mi", "Minnesota": "mn", "Mississippi": "ms", "Missouri": "mo",
+    "Montana": "mt", "Nebraska": "ne", "Nevada": "nv", "New Hampshire": "nh", "New Jersey": "nj",
+    "New Mexico": "nm", "New York": "ny", "North Carolina": "nc", "North Dakota": "nd", "Ohio": "oh",
+    "Oklahoma": "ok", "Oregon": "or", "Pennsylvania": "pa", "Rhode Island": "ri", "South Carolina": "sc",
+    "South Dakota": "sd", "Tennessee": "tn", "Texas": "tx", "Utah": "ut", "Vermont": "vt",
+    "Virginia": "va", "Washington": "wa", "West Virginia": "wv", "Wisconsin": "wi", "Wyoming": "wy"
+};
+
+// Initialize Map with special options for heavy themes
+const map = L.map('map', {
+    scrollWheelZoom: false, // Prevents map from stealing page scroll
+    tap: false // Helps mobile clicks in heavy templates
+}).setView([37.8, -96], 4);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CARTO'
+}).addTo(map);
+
+// IMPORTANT: Tell the theme not to intercept clicks on the map div
+const mapDiv = document.getElementById('map');
+L.DomEvent.disableClickPropagation(mapDiv);
+
+// --- 2. FETCH FUNCTION (Guaranteed Fallback) ---
+async function loadBills(stateName) {
+    const listDiv = document.getElementById('legislation-list');
+    const stateId = stateMap[stateName];
+    if (!stateId) return;
+
+    listDiv.innerHTML = '<p class="loading-text">Loading ' + stateName + ' bills...</p>';
+
+    try {
+        const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateId}/government`;
+        // Broad search: Removing 'session' to ensure we get results regardless of time of year
+        const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=5&apikey=${PLURAL_API_KEY}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            let html = "";
+            data.results.forEach(bill => {
+                html += `
+                    <div class="legislation-card">
+                        <h4>${bill.identifier}</h4>
+                        <p>${bill.title.substring(0, 100)}...</p>
+                        <ul class="actions" style="margin-top:10px;">
+                            <li><a href="mailto:rep@state.gov?subject=Regarding ${bill.identifier}" class="button primary small">Email Rep</a></li>
+                        </ul>
+                    </div>`;
+            });
+            listDiv.innerHTML = html;
+        } else {
+            listDiv.innerHTML = `<p>No recent activity found for ${stateName}.</p>`;
+        }
+    } catch (err) {
+        listDiv.innerHTML = "<p>API Error. Check console (F12).</p>";
+    }
+}
+
+// --- 3. INTERACTIONS ---
+let geojson;
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: (e) => e.target.setStyle({ fillOpacity: 0.8, color: '#fff' }),
+        mouseout: (e) => geojson.resetStyle(e.target),
+        click: (e) => {
+            // Stop theme from reacting to this click
+            L.DomEvent.stopPropagation(e);
+            
+            const stateName = feature.properties.name;
+            document.getElementById('district-title').innerText = stateName;
+            loadBills(stateName);
+            map.fitBounds(e.target.getBounds());
+        }
+    });
+}
+
+// --- 4. LOAD DATA ---
+fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+    .then(res => res.json())
+    .then(data => {
+        geojson = L.geoJSON(data, {
+            style: { fillColor: "#4c5c96", weight: 1, color: 'white', fillOpacity: 0.3 },
+            onEachFeature: onEachFeature
+        }).addTo(map);
+    });
+
+// THE THEME FIX: Wait for Solid State's animations to finish before sizing the map
+window.addEventListener('load', () => {
+    setTimeout(() => { map.invalidateSize(); }, 500);
+});
+    </script>
+</body>
+</html>

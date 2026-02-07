@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Legislation Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; background: #1a1a1a; color: white; }
+        
+        /* THE FIX: Map must have a defined height/flex to show up */
+        #map { flex: 2; height: 100%; background: #222; }
+        
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background: #252525; border-left: 2px solid #333; }
+        
+        .legislation-card { 
+            background: #333; padding: 15px; margin-bottom: 15px; border-radius: 8px; 
+            border-left: 4px solid #4CAF50; transition: transform 0.2s;
+        }
+        .legislation-card:hover { transform: translateX(5px); }
+        .legislation-card h4 { margin-top: 0; color: #4CAF50; }
+        .button { 
+            display: inline-block; padding: 8px 12px; background: #4CAF50; 
+            color: white; text-decoration: none; border-radius: 4px; font-size: 0.8em;
+        }
+        .loading { color: #aaa; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div id="sidebar">
+        <h2 id="district-title">Select a State</h2>
+        <div id="legislation-list">
+            <p>Click a state on the map to see active legislation.</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // --- CONFIGURATION ---
+        const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd'; // <--- PASTE YOUR KEY FROM OPEN.PLURALPOLICY.COM
+        
+        const stateMap = {
+            "Alabama": "al", "Alaska": "ak", "Arizona": "az", "Arkansas": "ar", "California": "ca",
+            "Colorado": "co", "Connecticut": "ct", "Delaware": "de", "Florida": "fl", "Georgia": "ga",
+            "Hawaii": "hi", "Idaho": "id", "Illinois": "il", "Indiana": "in", "Iowa": "ia",
+            "Kansas": "ks", "Kentucky": "ky", "Louisiana": "la", "Maine": "me", "Maryland": "md",
+            "Massachusetts": "ma", "Michigan": "mi", "Minnesota": "mn", "Mississippi": "ms", "Missouri": "mo",
+            "Montana": "mt", "Nebraska": "ne", "Nevada": "nv", "New Hampshire": "nh", "New Jersey": "nj",
+            "New Mexico": "nm", "New York": "ny", "North Carolina": "nc", "North Dakota": "nd", "Ohio": "oh",
+            "Oklahoma": "ok", "Oregon": "or", "Pennsylvania": "pa", "Rhode Island": "ri", "South Carolina": "sc",
+            "South Dakota": "sd", "Tennessee": "tn", "Texas": "tx", "Utah": "ut", "Vermont": "vt",
+            "Virginia": "va", "Washington": "wa", "West Virginia": "wv", "Wisconsin": "wi", "Wyoming": "wy"
+        };
+
+        // --- 1. INITIALIZE MAP ---
+        var map = L.map('map').setView([37.8, -96], 4);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
+        }).addTo(map);
+
+        // --- 2. FETCH BILLS FUNCTION ---
+        async function loadBills(stateName) {
+            const listDiv = document.getElementById('legislation-list');
+            const stateId = stateMap[stateName];
+            
+            if (!stateId) return;
+
+            listDiv.innerHTML = '<p class="loading">Searching Open States database...</p>';
+
+            try {
+                // We use the 'raw' AllOrigins proxy + the API Key in the URL to avoid header issues
+                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${stateId}&sort=latest_action_desc&per_page=5&apikey=${PLURAL_API_KEY}`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    let html = "";
+                    data.results.forEach(bill => {
+                        html += `
+                            <div class="legislation-card">
+                                <h4>${bill.identifier}</h4>
+                                <p>${bill.title.substring(0, 120)}...</p>
+                                <p><small>Status: ${bill.latest_action_description || 'No recent updates'}</small></p>
+                                <a href="mailto:rep@state.gov?subject=Regarding ${bill.identifier}" class="button">Email Representative</a>
+                            </div>`;
+                    });
+                    listDiv.innerHTML = html;
+                } else {
+                    listDiv.innerHTML = "<p>No active bills found for this session.</p>";
+                }
+            } catch (err) {
+                console.error(err);
+                listDiv.innerHTML = "<p style='color:orange;'>Error: Make sure your API Key is correct.</p>";
+            }
+        }
+
+        // --- 3. LOAD MAP DATA ---
+        // Fetching a reliable US States GeoJSON
+        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+            .then(res => res.json())
+            .then(data => {
+                L.geoJson(data, {
+                    style: { color: "#4CAF50", weight: 1, fillOpacity: 0.2 },
+                    onEachFeature: function(feature, layer) {
+                        layer.on({
+                            mouseover: (e) => e.target.setStyle({ fillOpacity: 0.5 }),
+                            mouseout: (e) => e.target.setStyle({ fillOpacity: 0.2 }),
+                            click: (e) => {
+                                const stateName = feature.properties.name;
+                                document.getElementById('district-title').innerText = stateName;
+                                loadBills(stateName);
+                                map.fitBounds(e.target.getBounds());
+                            }
+                        });
+                    }
+                }).addTo(map);
+            });
+
+        // FIX: Force map to refresh its size after loading
+        setTimeout(() => { map.invalidateSize(); }, 200);
+    </script>
+</body>
+</html>
