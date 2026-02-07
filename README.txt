@@ -1,5 +1,6 @@
 Solid State by 10:30
 
+Website accessible at https://ashleyl11.github.io/tartanhacks26/
 
 Solid State is an informative website that tracks recent U.S legislations by state.
 Users can explore laws, view detailed summaries, check legislators, and get in contact with them.
