@@ -36,10 +36,12 @@
 							<h2>Menu</h2>
 							<ul class="links">
 								<li><a href="index.html">Home</a></li>
-								<li><a href="generic.html">Generic</a></li>
-								<li><a href="elements.html">Elements</a></li>
-								<li><a href="#">Log In</a></li>
-								<li><a href="#">Sign Up</a></li>
+								<li><a href="map.html">Interactive Map</a></li>
+								<li><a href="allbills.html">All Recent Legislation</a></li>
+								<li><a href="contact.html">Contact Representative</a></li>
+								<li><a href="legislators.html">Search Legislators</a></li>
+								<!-- <li><a href="#">Log In</a></li>
+								<li><a href="#">Sign Up</a></li> -->
 							</ul>
 							<a href="#" class="close">Close</a>
 						</div>
@@ -105,6 +107,8 @@
 			</div>
 
 		<!-- Scripts -->
+         <script src="config.js"></script>
+
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/jquery.scrollex.min.js"></script>
 			<script src="assets/js/browser.min.js"></script>
@@ -120,6 +124,24 @@
 				scrollWheelZoom: false,
 				attributionControl: false
 			});
+
+            function generateTemplate({ repName, userCity, billNumber, billTitle, userName, userContact, wish, impact, harmedGroup, remedy }) {
+  const billRef = [billNumber, billTitle].filter(Boolean).join(", ");
+
+  return `Dear ${repName},
+
+I am a resident of ${userCity} and I am writing to express my strong disappointment regarding your vote in favor of ${billRef}.
+
+As a constituent, I believed this legislation would ${wish}, but instead, it ${impact}. This bill will directly harm ${harmedGroup}.
+
+I urge you to reconsider your position on this issue and to support ${remedy}.
+
+I look forward to seeing your actions in upcoming votes.
+
+Sincerely,
+${userName}
+${userContact}`.trim();
+}
 
 			// Minimal dark map
 			L.tileLayer(

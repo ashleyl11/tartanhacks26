@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title>Bill Details - Solid State</title>
+    <title>Law Details - Solid State</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <link rel="stylesheet" href="assets/css/main.css" />
@@ -16,6 +16,15 @@
     </style>
 </head>
 <body class="is-preload">
+
+    <div id="state-loader">
+        <div class="loader-ring"></div>
+        <p id="loader-text">
+            <span class="loader-message">Loading</span><span class="dots"></span>
+        </p>
+    </div>
+
+
 
     <div id="page-wrapper">
 
@@ -33,6 +42,10 @@
                     <li><a href="index.html">Home</a></li>
                     <li><a href="map.html">Interactive Map</a></li>
                     <li><a href="allbills.html">All Recent Legislation</a></li>
+                    <li><a href="contact.html">Contact Representative</a></li>
+                    <li><a href="legislators.html">Search Legislators</a></li>
+                    <!-- <li><a href="#">Log In</a></li>
+                    <li><a href="#">Sign Up</a></li> -->
                 </ul>
                 <a href="#" class="close">Close</a>
             </div>
@@ -41,7 +54,7 @@
         <section id="wrapper">
             <header>
                 <div class="inner">
-                    <h2 id="bill-id-header">Loading Bill...</h2>
+                    <h2 id="bill-id-header">Loading Law...</h2>
                     <p id="bill-title-sub">Please wait while we fetch the latest legislative data.</p>
                 </div>
             </header>
@@ -50,7 +63,7 @@
                 <div class="inner">
                     
                     <div id="loading-screen">
-                        <div class="preloader"></div>
+                        <div class="preloader">Processing API Request...</div>
                     </div>
 
                     <div id="bill-content" style="display:none;">
@@ -99,7 +112,7 @@
 
                         <ul class="actions">
                             <li><a href="allbills.html" class="button">Back to List</a></li>
-                            <li><a id="official-link" href="#" target="_blank" class="button primary">View Full Bill</a></li>
+                            <li><a id="official-link" href="#" target="_blank" class="button primary">View Full Law</a></li>
                         </ul>
                     </div>
 
@@ -121,13 +134,46 @@
     <script>
         const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY; 
 
+        let loaderTimeout;
+
+        function showLoader(message = "Loading bill details…") {
+        const loader = document.getElementById("state-loader");
+        const text = document.querySelector(".loader-message");
+
+        loader.classList.add("active");
+        text.style.animation = "none";
+        text.textContent = message;
+        void text.offsetHeight;
+        text.style.animation =
+            "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+
+        loaderTimeout = setTimeout(() => {
+            text.style.animation = "loaderTextOut 0.45s ease forwards";
+            setTimeout(() => {
+            text.style.animation = "none";
+            text.textContent = "One moment please…";
+            void text.offsetHeight;
+            text.style.animation =
+                "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+            }, 450);
+        }, 4000);
+        }
+
+        function hideLoader() {
+        clearTimeout(loaderTimeout);
+        document.getElementById("state-loader").classList.remove("active");
+        }
+
+
         async function fetchFullBillDetails() {
+            showLoader("Loading law details");
+
             const urlParams = new URLSearchParams(window.location.search);
             const billId = urlParams.get('bill_id');
             const state = urlParams.get('state');
 
             if (!billId || !state) {
-                document.getElementById('bill-id-header').innerText = "Error: No Bill Selected";
+                document.getElementById('bill-id-header').innerText = "Error: No Law Selected";
                 return;
             }
 
@@ -145,9 +191,11 @@
                 if (bill) {
                     renderBill(bill);
                 } else {
-                    throw new Error("Bill not found");
+                    throw new Error("Law not found");
                 }
             } catch (err) {
+                hideLoader();
+                document.getElementById('bill-id-header').innerText = "Data Unavailable";
                 console.error(err);
                 document.getElementById('bill-id-header').innerText = "Data Unavailable";
                 document.getElementById('loading-screen').innerHTML = "<p>Could not retrieve bill data. It may be from an older session.</p>";
@@ -155,6 +203,8 @@
         }
 
         function renderBill(bill) {
+            hideLoader();
+
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('bill-content').style.display = 'block';
 
