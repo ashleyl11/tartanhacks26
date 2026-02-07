@@ -267,7 +267,7 @@ function highlightState(layer) {
   layer.setStyle({ fillColor: '#8fa2ff', fillOpacity: 0.8, color: 'white', weight: 2 });
   activeLayer = layer;
 }
-
+ 
 function onEachFeature(feature, layer) {
     layer.on({
         mouseover: (e) => { if (activeLayer !== e.target) e.target.setStyle({ fillOpacity: 0.8, color: '#fff' }); },
