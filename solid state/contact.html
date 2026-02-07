@@ -1,170 +1,341 @@
 <!DOCTYPE HTML>
 <!--
-	Solid State by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+  Solid State by HTML5 UP
+  html5up.net | @ajlkn
 -->
 <html>
-	<head>
-		<title>Solid State by HTML5 UP</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<!-- Leaflet CSS -->
-		<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-		<!-- Leaflet JS -->
-		<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<head>
+  <title>Contact Representative - Solid State</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="assets/css/main.css" />
 
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-	</head>
-	<body class="is-preload">
+  <!-- Leaflet CSS/JS (for banner map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-		<!-- Page Wrapper -->
-			<div id="page-wrapper">
+  <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 
-				<!-- Header -->
-					<header id="header" class="alt">
-						<h1><a href="index.html">Solid State</a></h1>
-						<nav>
-							<a href="#menu">Menu</a>
-						</nav>
-					</header>
+  <style>
+    /* Banner map */
+    #banner-map {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    #banner .inner { position: relative; z-index: 1; }
 
-				<!-- Menu -->
-					<nav id="menu">
-						<div class="inner">
-							<h2>Menu</h2>
-							<ul class="links">
-								<li><a href="index.html">Home</a></li>
-								<li><a href="map.html">Interactive Map</a></li>
-								<li><a href="allbills.html">All Recent Legislation</a></li>
-								<li><a href="contact.html">Contact Representative</a></li>
-								<li><a href="legislators.html">Search Legislators</a></li>
-								<!-- <li><a href="#">Log In</a></li>
-								<li><a href="#">Sign Up</a></li> -->
-							</ul>
-							<a href="#" class="close">Close</a>
-						</div>
-					</nav>
+    /* Cards / panels */
+    .panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+    .rep-card {
+      cursor: pointer;
+      padding: 1rem;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      border-left: 4px solid rgba(255,255,255,0.25);
+      margin-bottom: 0.75rem;
+      transition: transform .08s ease, background .08s ease;
+    }
+    .rep-card:hover { transform: translateY(-1px); background: rgba(255,255,255,0.07); }
+    .rep-card.selected { border-left-color: #4c5c96; background: rgba(76,92,150,0.15); }
 
-				<!-- Banner -->
-					<section id="banner">
-					<div id="banner-map"></div> <!-- new map div -->
-					<div class="inner">
-						<div class="logo"><span class="icon fa-gem"></span></div>
-						<h2>This is Solid State</h2>
-						<p>Updated news about state legislation at your fingertips.</a></p>
-					</div>
-					</section>
+    .muted { opacity: 0.8; }
+    .small { font-size: 0.9em; }
 
+    textarea { min-height: 280px; }
 
-				
-				<!-- Footer -->
-					<section id="footer">
-						<div class="inner">
-							<h2 class="major">Get in touch with Your Representative</h2>
-							<p>Contact your representative here.</p>
-							<form method="post" action="#">
-								<div class="fields">
-									<div class="field">
-										<label for="name">Name</label>
-										<input type="text" name="name" id="name" />
-									</div>
-									<div class="field">
-										<label for="email">Email</label>
-										<input type="email" name="email" id="email" />
-									</div>
-									<div class="field">
-										<label for="message">Message</label>
-                                        <textarea name="message" id="message"  rows="4" cols="50">
-                                        This text will appear inside the text area when the page loads.
-                                        You can include multiple lines of text here.
-                                            </textarea>
-									</div>
-								</div>
-								<ul class="actions">
-									<li><input type="submit" value="Send Message" /></li>
-								</ul>
-							</form>
-							<ul class="contact">
-								<li class="icon solid fa-home">
-									Untitled Inc<br />
-									1234 Somewhere Road Suite #2894<br />
-									Nashville, TN 00000-0000
-								</li>
-								<li class="icon solid fa-phone">(000) 000-0000</li>
-								<li class="icon solid fa-envelope"><a href="#">information@untitled.tld</a></li>
-								<li class="icon brands fa-twitter"><a href="#">twitter.com/untitled-tld</a></li>
-								<li class="icon brands fa-facebook-f"><a href="#">facebook.com/untitled-tld</a></li>
-								<li class="icon brands fa-instagram"><a href="#">instagram.com/untitled-tld</a></li>
-							</ul>
-							<ul class="copyright">
-								<li>&copy; Untitled Inc. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
-							</ul>
-						</div>
-					</section>
+    /* Make buttons in a row wrap nicely */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  </style>
+</head>
 
-			</div>
+<body class="is-preload">
 
-		<!-- Scripts -->
-         <script src="config.js"></script>
+  <div id="page-wrapper">
 
-			<script src="assets/js/jquery.min.js"></script>
-			<script src="assets/js/jquery.scrollex.min.js"></script>
-			<script src="assets/js/browser.min.js"></script>
-			<script src="assets/js/breakpoints.min.js"></script>
-			<script src="assets/js/util.js"></script>
-			<script src="assets/js/main.js"></script>
-			<script>
-			const bannerMap = L.map("banner-map", {
-				center: [40.4406, -79.9959], // Pittsburgh
-				zoom: 10,
-				dragging: false,
-				zoomControl: false,
-				scrollWheelZoom: false,
-				attributionControl: false
-			});
+    <!-- Header -->
+    <header id="header" class="alt">
+      <h1><a href="index.html">Solid State</a></h1>
+      <nav><a href="#menu">Menu</a></nav>
+    </header>
 
-            function generateTemplate({ repName, userCity, billNumber, billTitle, userName, userContact, wish, impact, harmedGroup, remedy }) {
-  const billRef = [billNumber, billTitle].filter(Boolean).join(", ");
+    <!-- Menu -->
+    <nav id="menu">
+      <div class="inner">
+        <h2>Menu</h2>
+        <ul class="links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="map.html">Interactive Map</a></li>
+          <li><a href="allbills.html">All Recent Legislation</a></li>
+          <li><a href="contact.html">Contact Representative</a></li>
+        </ul>
+        <a href="#" class="close">Close</a>
+      </div>
+    </nav>
 
-  return `Dear ${repName},
+    <!-- Banner -->
+    <section id="banner">
+      <div id="banner-map"></div>
+      <div class="inner">
+        <div class="logo"><span class="icon fa-gem"></span></div>
+        <h2>Contact Your Representative</h2>
+        <p>Copy a pre-filled message and submit it through the official contact form.</p>
+      </div>
+    </section>
 
-I am a resident of ${userCity} and I am writing to express my strong disappointment regarding your vote in favor of ${billRef}.
+    <!-- Main content -->
+    <section id="wrapper">
+      <div class="wrapper">
+        <div class="inner">
 
-As a constituent, I believed this legislation would ${wish}, but instead, it ${impact}. This bill will directly harm ${harmedGroup}.
+          <h2 class="major">Step 1: Confirm your bill</h2>
+          <div class="panel">
+            <p class="muted">Selected bill (from the previous page):</p>
+            <p style="margin:0;"><strong id="billLabel">(No bill selected)</strong></p>
+            <p class="small muted" style="margin-top:0.5rem;">
+              If this is blank, make sure your bill page links to
+              <span class="muted">contact.html?billId=...&billTitle=...</span>
+            </p>
+          </div>
 
-I urge you to reconsider your position on this issue and to support ${remedy}.
+          <h2 class="major" style="margin-top:2rem;">Step 2: Find your federal representatives</h2>
+          <div class="panel">
+            <div class="row gtr-uniform">
+              <div class="col-9 col-12-medium">
+                <label for="addressInput">Full address (street, city, state, zip)</label>
+                <input id="addressInput" type="text" placeholder="350 5th Ave, New York, NY 10118" />
+              </div>
+              <div class="col-3 col-12-medium">
+                <label>&nbsp;</label>
+                <button id="lookupBtn" class="button primary fit">Find Reps</button>
+              </div>
+            </div>
+
+            <p id="status" class="muted" style="margin-top: 1rem;"></p>
+
+            <div id="repResults" style="margin-top: 1rem;"></div>
+          </div>
+
+          <h2 class="major" style="margin-top:2rem;">Step 3: Copy your message</h2>
+          <div class="panel">
+            <p class="muted small" style="margin-top:0;">
+              Clicking a representative above will auto-fill only their name in the template below. Everything else is editable.
+            </p>
+
+            <label for="templateBox">Message template</label>
+            <textarea id="templateBox"></textarea>
+
+            <div class="btn-row" style="margin-top: 1rem;">
+              <button id="copyBtn" class="button">Copy Message</button>
+              <a id="contactFormBtn" class="button primary" href="#" target="_blank" rel="noreferrer" style="pointer-events:none; opacity:.5;">
+                Open Contact Form
+              </a>
+              <span class="muted small" id="selectedRepLabel"></span>
+            </div>
+
+            <p class="muted small" style="margin-top:1rem;">
+              Note: Most representatives require you to use their website contact form. We provide the official link when available.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <section id="footer">
+      <div class="inner">
+        <ul class="copyright">
+          <li>&copy; Solid State. All rights reserved.</li>
+          <li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="config.js"></script>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/jquery.scrollex.min.js"></script>
+  <script src="assets/js/browser.min.js"></script>
+  <script src="assets/js/breakpoints.min.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/main.js"></script>
+
+  <script>
+    // ------------------ Banner map ------------------
+    const bannerMap = L.map("banner-map", {
+      center: [40.4406, -79.9959],
+      zoom: 10,
+      dragging: false,
+      zoomControl: false,
+      scrollWheelZoom: false,
+      attributionControl: false
+    });
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { opacity: 0.25 })
+      .addTo(bannerMap);
+
+    document.getElementById("banner").addEventListener("mousemove", (e) => {
+      const { width, height } = e.currentTarget.getBoundingClientRect();
+      const offsetX = ((e.clientX / width) - 0.5) * 0.1;
+      const offsetY = ((e.clientY / height) - 0.5) * 0.05;
+      bannerMap.panBy([offsetX * 100, offsetY * 50], { animate: false });
+    });
+
+    // ------------------ Contact page logic ------------------
+    const $ = (id) => document.getElementById(id);
+
+    // 1) Read bill from query string
+    const qp = new URLSearchParams(window.location.search);
+    const billId = qp.get("billId") || "";
+    const billTitle = qp.get("billTitle") || "";
+    const billLabel = [billId, billTitle].filter(Boolean).join(" — ");
+    $("billLabel").textContent = billLabel || "(No bill selected)";
+
+    // 2) Build template (only rep name should be auto-filled)
+    function buildTemplate(repName) {
+      const billRef = billLabel || "[Bill Number, Name of the Bill/Topic]";
+      return `Dear ${repName || "[Representative/Senator Name]"},
+I am a resident of [Your City/District] and I am writing to express my strong disappointment regarding your vote in favor of ${billRef}.
+
+As a constituent, I believed this legislation would [mention what you wished for], but instead, it [explain the negative impact of the bill- how did it directly impact you/your family/your community]. This bill will directly harm [mention specific group, e.g., working families, students, local businesses].
+
+I urge you to reconsider your position on this issue and to support [mention a remedy, such as repeal, amendment, or a future opposing vote].
 
 I look forward to seeing your actions in upcoming votes.
 
 Sincerely,
-${userName}
-${userContact}`.trim();
-}
+[Your Name]
+[Your Address/Contact Information]`;
+    }
 
-			// Minimal dark map
-			L.tileLayer(
-				"https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-				{ opacity: 0.25 }
-			).addTo(bannerMap);
+    $("templateBox").value = buildTemplate("");
 
-			// Optional: subtle parallax on mouse move
-			document.getElementById("banner").addEventListener("mousemove", (e) => {
-			const { width, height } = e.currentTarget.getBoundingClientRect();
+    // 3) Legisletter lookup
+    async function lookupLegisletter(address) {
+      const key = window.CONFIG?.LEGISLETTER_KEY;
+      if (!key) throw new Error("Missing LEGISLETTER_KEY in config.js");
 
-			// smaller multipliers for subtle movement
-			const offsetX = ((e.clientX / width) - 0.5) * 0.1; // was 0.5, now 0.1
-			const offsetY = ((e.clientY / height) - 0.5) * 0.05; // was 0.5, now 0.05
+      const url = new URL("https://api.legisletter.org/v1/lookup");
+      url.searchParams.set("address", address);
 
-			bannerMap.panBy([offsetX * 100, offsetY * 50], { animate: false });
-			});
+      const res = await fetch(url.toString(), {
+        headers: { "Authorization": `Bearer ${key}` }
+      });
 
-			</script>
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data?.message || data?.error || "Legisletter lookup failed");
+      }
+      return data;
+    }
 
-		
+    function setContactButton(link) {
+      const a = $("contactFormBtn");
+      a.href = link || "#";
+      if (link) {
+        a.style.pointerEvents = "auto";
+        a.style.opacity = "1";
+      } else {
+        a.style.pointerEvents = "none";
+        a.style.opacity = ".5";
+      }
+    }
 
-	</body>
+    function renderReps(data) {
+      const container = $("repResults");
+      container.innerHTML = "";
 
-	
+      const reps = [];
+      for (const s of (data.representatives?.senators || [])) reps.push(s);
+      if (data.representatives?.representative) reps.push(data.representatives.representative);
+
+      if (!reps.length) {
+        container.innerHTML = "<p>No representatives returned for that address.</p>";
+        return;
+      }
+
+      container.innerHTML = reps.map((r, idx) => {
+        const chamberLabel = (r.chamber === "senate") ? "U.S. Senator" : "U.S. House";
+        const contact = r.contactForm || r.website || "";
+        return `
+          <div class="rep-card" data-idx="${idx}">
+            <strong>${r.name}</strong> <span class="muted">(${r.party})</span><br/>
+            <span class="muted small">${chamberLabel} • ${r.state}${r.district ? ("-" + r.district) : ""}</span><br/>
+            <span class="muted small">Phone: ${r.phone || "N/A"}</span><br/>
+            <span class="small">
+              <a href="${r.website}" target="_blank" rel="noreferrer">Website</a>
+              ${r.contactForm ? ` • <a href="${r.contactForm}" target="_blank" rel="noreferrer">Contact Form</a>` : ""}
+            </span>
+          </div>
+        `;
+      }).join("");
+
+      // Click to select rep -> fill template name + enable contact link
+      const cards = container.querySelectorAll(".rep-card");
+      cards.forEach(card => {
+        card.addEventListener("click", () => {
+          cards.forEach(c => c.classList.remove("selected"));
+          card.classList.add("selected");
+
+          const r = reps[Number(card.getAttribute("data-idx"))];
+
+          // Only auto-supply rep name
+          $("templateBox").value = buildTemplate(r.name);
+
+          // Use contact form if present, otherwise website
+          const contactLink = r.contactForm || r.website || "";
+          setContactButton(contactLink);
+
+          $("selectedRepLabel").textContent = `Selected: ${r.name}`;
+          $("status").textContent = "Copy the message, then open the contact form and paste it in.";
+        });
+      });
+
+      // default: disable contact button until selection
+      setContactButton("");
+      $("selectedRepLabel").textContent = "";
+    }
+
+    // Lookup button
+    $("lookupBtn").addEventListener("click", async () => {
+      const address = $("addressInput").value.trim();
+      if (!address) {
+        $("status").textContent = "Please enter a full address.";
+        return;
+      }
+
+      $("status").textContent = "Looking up representatives...";
+      $("repResults").innerHTML = "<p class='muted'>Loading…</p>";
+      setContactButton("");
+
+      try {
+        const data = await lookupLegisletter(address);
+        renderReps(data);
+        $("status").textContent = "Click a representative to fill the template with their name.";
+      } catch (e) {
+        $("repResults").innerHTML = "";
+        $("status").textContent = `Error: ${e.message}`;
+      }
+    });
+
+    // Copy button
+    $("copyBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("templateBox").value);
+        $("status").textContent = "Copied message to clipboard.";
+      } catch {
+        $("status").textContent = "Copy failed (browser blocked). Select text and copy manually.";
+      }
+    });
+  </script>
+</body>
 </html>
