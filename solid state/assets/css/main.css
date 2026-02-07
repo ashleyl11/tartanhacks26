@@ -4298,15 +4298,39 @@ input, select, textarea {
   100% { fill-opacity: 0.9; }
 }
 
-.selected-state-label span {
-  font-weight: bold;
-  font-size: 0.9rem;
-  text-align: center;
-  display: inline-block;
-  white-space: nowrap;
+/* dropdown  */
+.state-select {
+    position: relative;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
 }
 
-.leaflet-interactive {
-  transition: all 0.25s ease;
+.state-select .state-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 0;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+    position: absolute;
+    width: 100%;
+    background: #2e3450; /* solid dark background, matches map */
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); /* subtle shadow for clarity */
 }
 
+.state-select.open .state-options {
+    max-height: 300px; /* dropdown visible */
+}
+
+.state-select .state-options li {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    transition: background 0.2s;
+}
+
+.state-select .state-options li:hover {
+    background: rgba(255,255,255,0.1);
+}

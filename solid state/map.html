@@ -85,16 +85,23 @@
                         </div>
 
                         <div class="col-5 col-12-medium">
-                            <h3 class="major" id="district-title">Select a Region</h3>
-                            <div id="legislation-list">
-                            </div>
-                        
+                        <!-- Dropdown heading & list -->
+                        <div class="state-select minimal">
+                            <h3 class="major state-trigger" id="district-title">
+                                Select a Region <span class="caret">▾</span>
+                            </h3>
+                            <ul class="state-options" id="stateOptions"></ul>
+                        </div>
+
+                        <div id="legislation-list"></div>
+
                         <ul class="actions stacked" id="view-more-container" style="display:none; margin-top: 2rem;">
                             <li>
                                 <a id="view-more-link" href="allbills.html" class="button fit">Explore All State Bills</a>
                             </li>
                         </ul>
-                        </div>
+                    </div>
+
                     </div>
                 </div>
             </div>
@@ -114,6 +121,7 @@
 let selectedLayer = null;
 let selectedStateName = null;
 
+// --- STYLES ---
 const stateStyle = {
   fillColor: "#4c5c96",
   weight: 1,
@@ -133,51 +141,34 @@ const selectedStyle = {
   color: "#ffffff"
 };
 
-
+// --- LOADER FUNCTIONS ---
 let loaderTimeout;
-
 function showLoader(stateName) {
   const loader = document.getElementById("state-loader");
   const text = document.querySelector(".loader-message");
 
   loader.classList.add("active");
-
-  // Reset animation
   text.style.animation = "none";
   text.textContent = `Loading ${stateName}`;
-
-  // Force reflow
   void text.offsetHeight;
-
-  // Animate in
   text.style.animation = "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
 
   loaderTimeout = setTimeout(() => {
-    // Animate out
     text.style.animation = "loaderTextOut 0.45s ease forwards";
-
     setTimeout(() => {
       text.style.animation = "none";
       text.textContent = `Still working on ${stateName}`;
-
       void text.offsetHeight;
-
       text.style.animation =
         "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
     }, 450);
   }, 4000);
 }
 
-
-
-
-
 function hideLoader() {
   clearTimeout(loaderTimeout);
   document.getElementById("state-loader").classList.remove("active");
 }
-
-
 
       // --- 1. THE CONFIG & MAP ---
 const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY; 
@@ -197,10 +188,10 @@ const stateMap = {
     "Virginia": "va", "Washington": "wa", "West Virginia": "wv", "Wisconsin": "wi", "Wyoming": "wy"
 };
 
-// Initialize Map with special options for heavy themes
+// --- INITIALIZE MAP ---
 const map = L.map('map', {
   dragging: true,
-  scrollWheelZoom: false, // keep zoom OFF
+  scrollWheelZoom: false,
   doubleClickZoom: false,
   tap: false,
   inertia: true
@@ -208,40 +199,26 @@ const map = L.map('map', {
 
 map.getContainer().addEventListener("wheel", function (e) {
   e.preventDefault();
-
   const deltaX = e.deltaX;
   const deltaY = e.deltaY;
-
-  // Pan speed (tweak if needed)
   const panFactor = 1;
-
-  map.panBy([deltaX * panFactor, deltaY * panFactor], {
-    animate: false
-  });
+  map.panBy([deltaX * panFactor, deltaY * panFactor], { animate: false });
 }, { passive: false });
-
-
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; CARTO'
 }).addTo(map);
 
-// IMPORTANT: Tell the theme not to intercept clicks on the map div
 const mapDiv = document.getElementById('map');
 L.DomEvent.disableClickPropagation(mapDiv);
-        
 
-
-const apikey= CONFIG.PLURAL_API_KEY;
-
-// --- 2. FETCH FUNCTION (Guaranteed Fallback) ---
+// --- FETCH BILLS ---
 async function loadBills(stateName) {
     const listDiv = document.getElementById('legislation-list');
     const stateId = stateMap[stateName];
     if (!stateId) return;
 
-    showLoader(stateName); // 👈 SHOW LOADER
-
+    showLoader(stateName);
     listDiv.innerHTML = '<p class="loading-text">Fetching legislation…</p>';
 
     try {
@@ -255,10 +232,8 @@ async function loadBills(stateName) {
         if (data.results && data.results.length > 0) {
             let html = "";
             data.results.forEach(bill => {
-              // We send the bill ID and the jurisdiction through the URL
               const stateId = stateMap[stateName];
               const detailLink = `details.html?bill_id=${bill.identifier}&state=${stateId}`;
-
               html += `
                   <div class="legislation-card">
                       <h4>${bill.identifier}</h4>
@@ -270,7 +245,6 @@ async function loadBills(stateName) {
             });
             const viewMoreContainer = document.getElementById('view-more-container');
             const viewMoreLink = document.getElementById('view-more-link');
-
             viewMoreContainer.style.display = 'block';
             viewMoreLink.href = `allbills.html?state=${stateId}`;
             listDiv.innerHTML = html;
@@ -280,85 +254,100 @@ async function loadBills(stateName) {
     } catch (err) {
         listDiv.innerHTML = "<p>API Error. Check console (F12).</p>";
     } finally {
-        hideLoader(); // 👈 ALWAYS HIDE LOADER
+        hideLoader();
     }
 }
 
-// --- 3. INTERACTIONS ---
+// --- MAP INTERACTIONS ---
 let geojson;
-let activeLabel = null;
 let activeLayer = null;
 
 function highlightState(layer) {
-  if (activeLayer && activeLayer !== layer) {
-    geojson.resetStyle(activeLayer);
-  }
-  if (activeLabel) map.removeLayer(activeLabel);
-
-  layer.setStyle({
-    fillColor: '#8fa2ff',
-    fillOpacity: 0.8,
-    color: 'white',
-    weight: 2
-  });
-
+  if (activeLayer && activeLayer !== layer) geojson.resetStyle(activeLayer);
+  layer.setStyle({ fillColor: '#8fa2ff', fillOpacity: 0.8, color: 'white', weight: 2 });
   activeLayer = layer;
 }
 
-
-
-
 function onEachFeature(feature, layer) {
     layer.on({
-        mouseover: (e) => {
-            const stateName = feature.properties.name
-            if (activeLayer !== e.target) e.target.setStyle({ fillOpacity: 0.8, color: '#fff' });
-            if (!selectedStateName) document.getElementById('district-title').innerText = stateName;
-        },
-        mouseout: (e) => {
-            if (activeLayer !== e.target) geojson.resetStyle(e.target);
-            if (!selectedStateName) document.getElementById('district-title').innerText = "Select a Region";
-        },
+        mouseover: (e) => { if (activeLayer !== e.target) e.target.setStyle({ fillOpacity: 0.8, color: '#fff' }); },
+        mouseout: (e) => { if (activeLayer !== e.target) geojson.resetStyle(e.target); },
+
         click: (e) => {
             L.DomEvent.stopPropagation(e);
-
             const stateName = feature.properties.name;
-            selectedStateName = stateName;
-            document.getElementById('district-title').innerText = stateName;
+ 
 
+            // Update dropdown and map/bills
+            dropdownBtn.innerHTML = `${stateName} <span class="caret">▾</span>`;
             loadBills(stateName);
-            map.fitBounds(e.target.getBounds());
-
-            highlightState(e.target); // handle highlight + label
+            geojson.eachLayer(layer => {
+                if (layer.feature.properties.name === stateName) {
+                    map.fitBounds(layer.getBounds());
+                    highlightState(layer);
+                }
+            });
         }
     });
 }
 
-
-
-
-// --- 4. LOAD DATA ---
+// --- LOAD GEOJSON ---
 fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
     .then(res => res.json())
     .then(data => {
         geojson = L.geoJSON(data, {
-        style: { fillColor: "#4c5c96", weight: 1, color: 'white', fillOpacity: 0.3 },
-        onEachFeature: function(feature, layer) {
-            onEachFeature(feature, layer); // your hover/click handlers
-        }
-    }).addTo(map);
-
-
+            style: stateStyle,
+            onEachFeature: onEachFeature
+        }).addTo(map);
     });
 
-layer.getElement()?.classList.add("selected");
+// --- THEME FIX ---
+window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 500));
 
+// --------------------
+// DROPDOWN LOGIC
+// --------------------
+const dropdown = document.querySelector(".state-select");
+const dropdownBtn = document.querySelector(".state-trigger");
+const optionsList = document.getElementById("stateOptions");
 
-// THE THEME FIX: Wait for Solid State's animations to finish before sizing the map
-window.addEventListener('load', () => {
-    setTimeout(() => { map.invalidateSize(); }, 500);
+// Populate dropdown
+Object.keys(stateMap).forEach(stateName => {
+    const li = document.createElement("li");
+    li.textContent = stateName;
+    li.dataset.state = stateName;
+    optionsList.appendChild(li);
 });
 
-    </script>
+// Toggle dropdown
+dropdownBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
+});
+
+// Close dropdown outside click
+document.addEventListener("click", () => dropdown.classList.remove("open"));
+
+// Select from dropdown
+optionsList.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+
+    const state = li.dataset.state;
+    dropdownBtn.innerHTML = `${state} <span class="caret">▾</span>`;
+    dropdown.classList.remove("open");
+    loadBills(state);
+
+    if (geojson) {
+        geojson.eachLayer(layer => {
+            if (layer.feature.properties.name === state) {
+                map.fitBounds(layer.getBounds());
+                highlightState(layer);
+            }
+        });
+    }
+});
+</script>
+
 </body>
 </html>
