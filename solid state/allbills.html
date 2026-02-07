@@ -108,7 +108,7 @@
                           <h3 class="major">${bill.identifier}</h3>
                           <p>${bill.title.substring(0, 150)}...</p>
                           <p style="font-size: 0.8rem; opacity: 0.7;">Last Action: ${bill.latest_action_description || 'Updated'}</p>
-                          <a href="bill-details.html?bill_id=${bill.identifier}&state=${stateAbbr}" class="special">Learn more</a>
+                          <a href="details.html?bill_id=${bill.identifier}&state=${stateAbbr}" class="special">Learn more</a>
                       </article>
                   `).join('');
               }
