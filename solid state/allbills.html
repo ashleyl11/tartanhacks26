@@ -38,6 +38,10 @@
                     <li><a href="index.html">Home</a></li>
                     <li><a href="map.html">Interactive Map</a></li>
                     <li><a href="allbills.html">All Recent Legislation</a></li>
+                    <li><a href="contact.html">Contact Representative</a></li>
+                    <li><a href="#">Search Legislators</a></li>
+                    <!-- <li><a href="#">Log In</a></li>
+                    <li><a href="#">Sign Up</a></li> -->
                 </ul>
                 <a href="#" class="close">Close</a>
             </div>
@@ -69,13 +73,13 @@
                         </div>
                     </div>
 
-                    <h3 class="major" id="grid-header">Recent Bills</h3>
+                    <h3 class="major" id="grid-header">Recent Laws</h3>
                     
                     <section class="features" id="bill-grid">
                         </section>
 
                     <div id="load-more-container" class="hidden">
-                        <button id="load-more-btn" class="button primary" onclick="loadMoreBills()">Load More Bills</button>
+                        <button id="load-more-btn" class="button primary" onclick="loadMoreBills()">Load More Laws</button>
                     </div>
 
                     <ul class="actions" style="margin-top: 3rem; border-top: solid 2px rgba(255, 255, 255, 0.1); padding-top: 2rem;">
@@ -195,7 +199,7 @@
             pageTitle.innerText = `${fullStateName} Legislation`;
 
             if (!isAppending) {
-                grid.innerHTML = "<p>Loading bills...</p>";
+                grid.innerHTML = "<p>Loading laws...</p>";
                 loadMoreContainer.classList.add('hidden');
             } else {
                 loadMoreBtn.innerText = "Fetching more...";
@@ -223,19 +227,19 @@
                     // Manage "Load More" button visibility
                     if (data.results.length === 20) {
                         loadMoreContainer.classList.remove('hidden');
-                        loadMoreBtn.innerText = "Load More Bills";
+                        loadMoreBtn.innerText = "Load More Laws";
                     } else {
                         // Less than 20 items means we hit the end of the list
                         loadMoreContainer.classList.add('hidden');
                     }
                 } else {
                     if (!isAppending) {
-                        grid.innerHTML = "<p>No bills found for this state.</p>";
+                        grid.innerHTML = "<p>No laws found for this state.</p>";
                     }
                     loadMoreContainer.classList.add('hidden');
                 }
             } catch (err) {
-                console.error("Error fetching bills:", err);
+                console.error("Error fetching laws:", err);
                 if (!isAppending) {
                     grid.innerHTML = `<p>Error loading legislation: ${err.message}.</p>`;
                 }
@@ -248,7 +252,7 @@
         function renderGrid(bills, state) {
             const grid = document.getElementById('bill-grid');
             if (!bills || bills.length === 0) {
-                grid.innerHTML = "<p>No bills match your current filter.</p>";
+                grid.innerHTML = "<p>No laws match your current filter.</p>";
                 return;
             }
 
