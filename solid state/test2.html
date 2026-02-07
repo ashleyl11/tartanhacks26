@@ -132,20 +132,16 @@ async function loadBills(stateName) {
         if (data.results && data.results.length > 0) {
             let html = "";
             data.results.forEach(bill => {
-    // Get the external link provided by the API
-    const detailsUrl = bill.openstates_url || `https://pluralpolicy.com/bill/${bill.jurisdiction.id.split(':').pop()}/${bill.session}/${bill.identifier.replace(/\s+/g, '')}`;
+    // We send the bill ID and the jurisdiction through the URL
+    const stateId = stateMap[stateName];
+    const detailLink = `details.html?bill_id=${bill.identifier}&state=${stateId}`;
 
     html += `
         <div class="legislation-card">
             <h4>${bill.identifier}</h4>
             <p>${bill.title.substring(0, 100)}...</p>
-            
-            <ul class="actions" style="margin-top:10px;">
-                <li>
-                    <a href="${detailsUrl}" 
-                       target="_blank" 
-                       class="button primary small">View Details</a>
-                </li>
+            <ul class="actions">
+                <li><a href="${detailLink}" class="button primary small">View Details</a></li>
             </ul>
         </div>`;
 });

@@ -1,0 +1,173 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Bill Details - Solid State</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+        <style>
+            #loading-screen { padding: 50px; text-align: center; }
+            .bill-data-box { background: rgba(255, 255, 255, 0.05); padding: 2rem; border-radius: 4px; border-left: 4px solid #4c5c96; margin-bottom: 2rem; }
+            .status-badge { display: inline-block; padding: 0.2rem 0.8rem; background: #4c5c96; border-radius: 20px; font-size: 0.8rem; margin-bottom: 1rem; }
+        </style>
+	</head>
+	<body class="is-preload">
+
+		<div id="page-wrapper">
+
+			<header id="header">
+				<h1><a href="index.html">Legislation Tracker</a></h1>
+				<nav><a href="index.html">Back to Map</a></nav>
+			</header>
+
+			<section id="wrapper">
+				<header>
+					<div class="inner">
+						<h2 id="bill-id-header">Loading Bill...</h2>
+						<p id="bill-title-sub">Please wait while we fetch the latest legislative data.</p>
+					</div>
+				</header>
+
+				<div class="wrapper">
+					<div class="inner">
+                        
+                        <div id="loading-screen">
+                            <div class="preloader">Processing API Request...</div>
+                        </div>
+
+                        <div id="bill-content" style="display:none;">
+                            <section>
+                                <div class="status-badge" id="bill-status">Status Unknown</div>
+                                <h3 class="major">Summary</h3>
+                                <p id="bill-summary-text"></p>
+                                
+                                <div class="row">
+                                    <div class="col-6 col-12-medium">
+                                        <h4>Fast Facts</h4>
+                                        <ul class="alt" id="bill-facts">
+                                            </ul>
+                                    </div>
+                                    <div class="col-6 col-12-medium">
+                                        <h4>Sponsors & Authors</h4>
+                                        <ul id="bill-sponsors">
+                                            </ul>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 class="major">Latest Actions</h3>
+                                <div class="table-wrapper">
+                                    <table class="alt">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Action</th>
+                                                <th>Organization</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="actions-table">
+                                            </tbody>
+                                    </table>
+                                </div>
+                            </section>
+
+                            <ul class="actions">
+                                <li><a href="index.html" class="button">Return to Map</a></li>
+                                <li><a id="official-link" href="#" target="_blank" class="button primary">View Full Text</a></li>
+                            </ul>
+                        </div>
+
+					</div>
+				</div>
+			</section>
+
+		</div>
+
+		<script src="assets/js/jquery.min.js"></script>
+        <script src="assets/js/main.js"></script>
+
+        <script>
+            // CONFIGURATION
+            const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd'; 
+
+            async function fetchFullBillDetails() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const billId = urlParams.get('bill_id');
+                const state = urlParams.get('state');
+
+                if (!billId || !state) {
+                    document.getElementById('bill-id-header').innerText = "Error: No Bill Selected";
+                    return;
+                }
+
+                try {
+                    const jurisdictionId = `ocd-jurisdiction/country:us/state:${state}/government`;
+                    // Fetch specifically for this bill identifier
+                    const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&identifier=${encodeURIComponent(billId)}&include=sponsorships&include=actions&apikey=${PLURAL_API_KEY}`;
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+                    const response = await fetch(proxyUrl);
+                    const data = await response.json();
+                    const bill = data.results[0]; // Get the first match
+
+                    if (bill) {
+                        renderBill(bill);
+                    } else {
+                        throw new Error("Bill not found");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('bill-id-header').innerText = "Data Unavailable";
+                }
+            }
+
+            function renderBill(bill) {
+                // Hide loader
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('bill-content').style.display = 'block';
+
+                // Basic Info
+                document.getElementById('bill-id-header').innerText = bill.identifier;
+                document.getElementById('bill-title-sub').innerText = bill.title;
+                document.getElementById('bill-summary-text').innerText = bill.title; // v3 uses title for summary usually
+                document.getElementById('bill-status').innerText = bill.latest_action_description || "Active";
+                document.getElementById('official-link').href = bill.openstates_url;
+
+                // Fast Facts
+                const facts = document.getElementById('bill-facts');
+                facts.innerHTML = `
+                    <li><strong>Session:</strong> ${bill.session}</li>
+                    <li><strong>Jurisdiction:</strong> ${bill.jurisdiction.name}</li>
+                    <li><strong>Last Updated:</strong> ${new Date(bill.updated_at).toLocaleDateString()}</li>
+                `;
+
+                // Sponsors
+                const sponsorList = document.getElementById('bill-sponsors');
+                if (bill.sponsorships) {
+                    bill.sponsorships.forEach(s => {
+                        sponsorList.innerHTML += `<li>${s.name} <small>(${s.classification})</small></li>`;
+                    });
+                }
+
+                // Actions Table
+                const table = document.getElementById('actions-table');
+                if (bill.actions) {
+                    bill.actions.reverse().forEach(a => {
+                        table.innerHTML += `
+                            <tr>
+                                <td>${new Date(a.date).toLocaleDateString()}</td>
+                                <td>${a.description}</td>
+                                <td>${a.organization.name}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+
+            // Start the process
+            window.onload = fetchFullBillDetails;
+        </script>
+	</body>
+</html>
