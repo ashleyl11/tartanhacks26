@@ -249,10 +249,10 @@ async function loadBills(stateName) {
             viewMoreLink.href = `allbills.html?state=${stateId}`;
             listDiv.innerHTML = html;
         } else {
-            listDiv.innerHTML = `<p>No recent activity found for ${stateName}.</p>`;
+            listDiv.innerHTML = `<p>An error occured. Please try again.</p>`;
         }
     } catch (err) {
-        listDiv.innerHTML = "<p>API Error. Check console (F12).</p>";
+        listDiv.innerHTML = "<p>An error occured. Please try again.</p>";
     } finally {
         hideLoader();
     }
