@@ -157,7 +157,7 @@ function showLoader(stateName) {
     text.style.animation = "loaderTextOut 0.45s ease forwards";
     setTimeout(() => {
       text.style.animation = "none";
-      text.textContent = `Still working on ${stateName}`;
+      text.textContent = `Working on ${stateName}`;
       void text.offsetHeight;
       text.style.animation =
         "loaderTextIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards";
