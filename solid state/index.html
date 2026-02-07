@@ -10,6 +10,11 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+		<!-- Leaflet CSS -->
+		<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+		<!-- Leaflet JS -->
+		<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 	</head>
 	<body class="is-preload">
@@ -42,12 +47,14 @@
 
 				<!-- Banner -->
 					<section id="banner">
-						<div class="inner">
-							<div class="logo"><span class="icon fa-gem"></span></div>
-							<h2>This is Solid State</h2>
-							<p>Another free + fully responsive site template by <a href="http://html5up.net">HTML5 UP</a></p>
-						</div>
+					<div id="banner-map"></div> <!-- new map div -->
+					<div class="inner">
+						<div class="logo"><span class="icon fa-gem"></span></div>
+						<h2>This is Solid State</h2>
+						<p>Updated news about state legislation at your fingertips.</a></p>
+					</div>
 					</section>
+
 
 				<!-- Wrapper -->
 					<section id="wrapper">
@@ -57,9 +64,9 @@
 								<div class="inner">
 									<a href="#" class="image"><img src="images/pic01.jpg" alt="" /></a>
 									<div class="content">
-										<h2 class="major">Magna arcu feugiat</h2>
-										<p>Lorem ipsum dolor sit amet, etiam lorem adipiscing elit. Cras turpis ante, nullam sit amet turpis non, sollicitudin posuere urna. Mauris id tellus arcu. Nunc vehicula id nulla dignissim dapibus. Nullam ultrices, neque et faucibus viverra, ex nulla cursus.</p>
-										<a href="#" class="special">Learn more</a>
+										<h2 class="major">Legislation Map</h2>
+										<p>Find out about recently passed laws, legislation, and who is responsible now.</p>
+										<a href="test2.html" class="special">Take me to the map</a>
 									</div>
 								</div>
 							</section>
@@ -178,6 +185,38 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+			<script>
+			const bannerMap = L.map("banner-map", {
+				center: [40.4406, -79.9959], // Pittsburgh
+				zoom: 10,
+				dragging: false,
+				zoomControl: false,
+				scrollWheelZoom: false,
+				attributionControl: false
+			});
+
+			// Minimal dark map
+			L.tileLayer(
+				"https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+				{ opacity: 0.25 }
+			).addTo(bannerMap);
+
+			// Optional: subtle parallax on mouse move
+			document.getElementById("banner").addEventListener("mousemove", (e) => {
+			const { width, height } = e.currentTarget.getBoundingClientRect();
+
+			// smaller multipliers for subtle movement
+			const offsetX = ((e.clientX / width) - 0.5) * 0.1; // was 0.5, now 0.1
+			const offsetY = ((e.clientY / height) - 0.5) * 0.05; // was 0.5, now 0.05
+
+			bannerMap.panBy([offsetX * 100, offsetY * 50], { animate: false });
+			});
+
+			</script>
+
+		
 
 	</body>
+
+	
 </html>
