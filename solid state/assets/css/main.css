@@ -99,15 +99,16 @@ input, select, textarea {
 	}
 
 	body {
-		background-color: #2e3141;
-		background-image: linear-gradient(to top, rgba(46, 49, 65, 0.8), rgba(46, 49, 65, 0.8)), url("../../images/bg.jpg");
-		background-size: auto,
- cover;
-		background-attachment: fixed,
- fixed;
-		background-position: center,
- center;
-	}
+		/* CHANGED: A slightly darker, richer blue based on your image */
+		background-color: #3b4a7d;
+
+		/* CHANGED: Updated RGB values (59, 74, 125) to match the new background */
+		background-image: linear-gradient(to top, rgba(59, 74, 125, 0.8), rgba(59, 74, 125, 0.8)), url("../../images/bg.jpg");
+
+		background-size: auto, cover;
+		background-attachment: fixed, fixed;
+		background-position: center, center;
+}
 
 		body.is-preload *, body.is-preload *:before, body.is-preload *:after {
 			-moz-animation: none !important;
