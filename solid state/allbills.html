@@ -10,6 +10,8 @@
         /* Extra styling for the selection area */
         #selector-area { margin-bottom: 2rem; padding: 2rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
         .hidden { display: none !important; }
+        /* Ensure the grid doesn't collapse */
+        #bill-grid { min-height: 200px; }
     </style>
 </head>
 <body class="is-preload">
@@ -48,7 +50,7 @@
                                 <label for="state-dropdown">Select a State</label>
                                 <select id="state-dropdown" onchange="handleStateChange()">
                                     <option value="">- Choose State -</option>
-                                    </select>
+                                </select>
                             </div>
                             <div class="col-6 col-12-xsmall">
                                 <label for="search-input">Filter by Keyword</label>
@@ -77,8 +79,9 @@
     <script src="config.js"></script>
 
     <script>
-        const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY;
-        let allLoadedBills = []; // Store bills globally for filtering
+        // Use a fallback to prevent the whole script from crashing if config.js fails
+        const PLURAL_API_KEY = typeof CONFIG !== 'undefined' ? CONFIG.PLURAL_API_KEY : 'MISSING_KEY';
+        let allLoadedBills = []; 
 
         const stateMap = {
             "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas", "ca": "California",
@@ -106,7 +109,6 @@
         function handleStateChange() {
             const selectedState = document.getElementById('state-dropdown').value;
             if (selectedState) {
-                // Update URL without refreshing so the user can bookmark it
                 const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?state=' + selectedState;
                 window.history.pushState({path:newurl},'',newurl);
                 loadAllBills(selectedState);
@@ -125,43 +127,64 @@
                 return;
             }
 
-            // Sync dropdown with URL state
             document.getElementById('state-dropdown').value = stateAbbr;
             const fullStateName = stateMap[stateAbbr] || "State";
             pageTitle.innerText = `${fullStateName} Legislation`;
 
             try {
                 grid.innerHTML = "<p>Loading bills...</p>";
+                
+                // Construct Jurisdiction ID for Open States V3
                 const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateAbbr}/government`;
-                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=40&apikey=${PLURAL_API_KEY}`;
+                
+                // Use per_page=20 to keep initial load fast
+                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=20&apikey=${PLURAL_API_KEY}`;
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
                 const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Could not connect to the API proxy.");
+                
                 const data = await response.json();
+                console.log("API Data received:", data); // Check this in your browser console
 
-                if (data.results) {
-                    allLoadedBills = data.results; // Save to global list
+                if (data && data.results) {
+                    allLoadedBills = data.results; 
                     renderGrid(allLoadedBills, stateAbbr);
+                } else {
+                    grid.innerHTML = "<p>No bills found for this state.</p>";
                 }
             } catch (err) {
-                grid.innerHTML = "<p>Error loading legislation. Please try again.</p>";
+                console.error("Error fetching bills:", err);
+                grid.innerHTML = `<p>Error loading legislation: ${err.message}. Please refresh or try another state.</p>`;
             }
         }
 
         function renderGrid(bills, state) {
             const grid = document.getElementById('bill-grid');
-            if (bills.length === 0) {
+            if (!bills || bills.length === 0) {
                 grid.innerHTML = "<p>No bills found matching your criteria.</p>";
                 return;
             }
-            grid.innerHTML = bills.map(bill => `
-                <article>
-                    <h3 class="major">${bill.identifier}</h3>
-                    <p>${bill.title.substring(0, 150)}...</p>
-                    <p style="font-size: 0.8rem; opacity: 0.7;">Last Action: ${bill.latest_action_description || 'Updated'}</p>
-                    <a href="details.html?bill_id=${bill.identifier}&state=${state}" class="special">Learn more</a>
-                </article>
-            `).join('');
+
+            grid.innerHTML = bills.map(bill => {
+                // Open States V3 property paths:
+                const billTitle = bill.title || "No title provided";
+                const truncatedTitle = billTitle.length > 150 ? billTitle.substring(0, 150) + "..." : billTitle;
+                
+                // Latest action is nested in an object
+                const latestAction = bill.latest_action ? bill.latest_action.description : 'Recently updated';
+
+                return `
+                    <article>
+                        <h3 class="major">${bill.identifier}</h3>
+                        <p>${truncatedTitle}</p>
+                        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 1rem;">
+                            <strong>Last Action:</strong> ${latestAction}
+                        </p>
+                        <a href="details.html?bill_id=${bill.identifier}&state=${state}" class="special">Learn more</a>
+                    </article>
+                `;
+            }).join('');
         }
 
         function filterBills() {
@@ -170,8 +193,8 @@
             const state = urlParams.get('state');
 
             const filtered = allLoadedBills.filter(bill => 
-                bill.title.toLowerCase().includes(query) || 
-                bill.identifier.toLowerCase().includes(query)
+                (bill.title && bill.title.toLowerCase().includes(query)) || 
+                (bill.identifier && bill.identifier.toLowerCase().includes(query))
             );
             renderGrid(filtered, state);
         }
