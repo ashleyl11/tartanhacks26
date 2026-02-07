@@ -95,11 +95,16 @@
                             <ul class="state-options" id="stateOptions"></ul>
                         </div>
 
+                        <div id="sidebar-placeholder" class="sidebar-placeholder">
+                            <p>Select a state on the map or 
+                                on the dropdown menu to get started.</p>
+                        </div>
+
                         <div id="legislation-list"></div>
 
                         <ul class="actions stacked" id="view-more-container" style="display:none; margin-top: 2rem;">
                             <li>
-                                <a id="view-more-link" href="allbills.html" class="button fit">Explore All State Laws</a>
+                                <a id="view-more-link" href="allbills.html" class="button fit">Explore All Recent Laws</a>
                             </li>
                         </ul>
                     </div>
@@ -249,6 +254,7 @@ async function loadBills(stateName) {
             const viewMoreLink = document.getElementById('view-more-link');
             viewMoreContainer.style.display = 'block';
             viewMoreLink.href = `allbills.html?state=${stateId}`;
+            viewMoreLink.textContent = `See recent laws in ${stateName}`;
             listDiv.innerHTML = html;
         } else {
             listDiv.innerHTML = `<p>An error occured. Please try again.</p>`;
@@ -278,11 +284,12 @@ function onEachFeature(feature, layer) {
         click: (e) => {
             L.DomEvent.stopPropagation(e);
             const stateName = feature.properties.name;
- 
 
             // Update dropdown and map/bills
             dropdownBtn.innerHTML = `${stateName} <span class="caret">▾</span>`;
+            hideSidebarPlaceholder();
             loadBills(stateName);
+
             geojson.eachLayer(layer => {
                 if (layer.feature.properties.name === stateName) {
                     map.fitBounds(layer.getBounds());
@@ -312,6 +319,11 @@ window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 500
 const dropdown = document.querySelector(".state-select");
 const dropdownBtn = document.querySelector(".state-trigger");
 const optionsList = document.getElementById("stateOptions");
+
+function hideSidebarPlaceholder() {
+  const placeholder = document.getElementById("sidebar-placeholder");
+  if (placeholder) placeholder.style.display = "none";
+}
 
 // Populate dropdown
 Object.keys(stateMap).forEach(stateName => {
