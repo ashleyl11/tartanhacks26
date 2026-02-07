@@ -108,11 +108,12 @@
         <script src="assets/js/breakpoints.min.js"></script> 
         <script src="assets/js/util.js"></script>
         <script src="assets/js/main.js"></script>
+        <script src="config.js"></script>
 
 
         <script>
             // CONFIGURATION
-            const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd'; 
+            const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY; 
 
             async function fetchFullBillDetails() {
                 const urlParams = new URLSearchParams(window.location.search);

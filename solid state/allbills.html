@@ -6,14 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <link rel="stylesheet" href="assets/css/main.css" />
     <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+    <style>
+        /* Extra styling for the selection area */
+        #selector-area { margin-bottom: 2rem; padding: 2rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body class="is-preload">
     <div id="page-wrapper">
         <header id="header">
-            <h1><a href="index.html">Solid State</a></h1>
-            <nav>
-                <a href="#menu">Menu</a>
-            </nav>
+            <h1><a href="index.html">Legislation Tracker</a></h1>
+            <nav><a href="#menu">Menu</a></nav>
         </header>
 
         <nav id="menu">
@@ -21,30 +24,40 @@
                 <h2>Menu</h2>
                 <ul class="links">
                     <li><a href="index.html">Home</a></li>
-                    <li><a href="map.html">Interactive Map</a></li>
+                    <li><a href="test2.html">Interactive Map</a></li>
                     <li><a href="allbills.html">All Recent Legislation</a></li>
-                    <!-- <li><a href="#">Log In</a></li>
-                    <li><a href="#">Sign Up</a></li> -->
                 </ul>
                 <a href="#" class="close">Close</a>
             </div>
         </nav>
 
-        
-
-
         <section id="wrapper">
             <header>
-              <div class="inner">
-                  <h2 id="state-page-title">Loading Legislation...</h2>
-                  <p>Comprehensive list of recent legislative activity.</p>
-              </div>
+                <div class="inner">
+                    <h2 id="state-page-title">Legislation Explorer</h2>
+                    <p>Search and browse recent legislative activity across the country.</p>
+                </div>
             </header>
 
             <div class="wrapper">
                 <div class="inner">
-                    <h3 class="major">Active Bills</h3>
                     
+                    <div id="selector-area">
+                        <div class="row gtr-uniform">
+                            <div class="col-6 col-12-xsmall" id="state-select-container">
+                                <label for="state-dropdown">Select a State</label>
+                                <select id="state-dropdown" onchange="handleStateChange()">
+                                    <option value="">- Choose State -</option>
+                                    </select>
+                            </div>
+                            <div class="col-6 col-12-xsmall">
+                                <label for="search-input">Filter by Keyword</label>
+                                <input type="text" id="search-input" placeholder="e.g. Education, Health..." onkeyup="filterBills()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="major" id="grid-header">Recent Bills</h3>
                     <section class="features" id="bill-grid">
                         </section>
 
@@ -61,62 +74,112 @@
     <script src="assets/js/breakpoints.min.js"></script>
     <script src="assets/js/util.js"></script>
     <script src="assets/js/main.js"></script>
-
+    <script src="config.js"></script>
 
     <script>
-        const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd';
+        const PLURAL_API_KEY = CONFIG.PLURAL_API_KEY;
+        let allLoadedBills = []; // Store bills globally for filtering
 
-        async function loadAllBills() {
-          const urlParams = new URLSearchParams(window.location.search);
-          const stateAbbr = urlParams.get('state'); // e.g., "pa"
-          const grid = document.getElementById('bill-grid');
-          const pageTitle = document.getElementById('state-page-title');
+        const stateMap = {
+            "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas", "ca": "California",
+            "co": "Colorado", "ct": "Connecticut", "de": "Delaware", "fl": "Florida", "ga": "Georgia",
+            "hi": "Hawaii", "id": "Idaho", "il": "Illinois", "in": "Indiana", "ia": "Iowa",
+            "ks": "Kansas", "ky": "Kentucky", "la": "Louisiana", "me": "Maine", "md": "Maryland",
+            "ma": "Massachusetts", "mi": "Michigan", "mn": "Minnesota", "ms": "Mississippi", "mo": "Missouri",
+            "mt": "Montana", "ne": "Nebraska", "nv": "Nevada", "nh": "New Hampshire", "nj": "New Jersey",
+            "nm": "New Mexico", "ny": "New York", "nc": "North Carolina", "nd": "North Dakota", "oh": "Ohio",
+            "ok": "Oklahoma", "or": "Oregon", "pa": "Pennsylvania", "ri": "Rhode Island", "sc": "South Carolina",
+            "sd": "South Dakota", "tn": "Tennessee", "tx": "Texas", "ut": "Utah", "vt": "Vermont",
+            "va": "Virginia", "wa": "Washington", "wv": "West Virginia", "wi": "Wisconsin", "wy": "Wyoming"
+        };
 
-          if (!stateAbbr) return;
-
-          // --- REVERSE LOOKUP FOR THE TITLE ---
-          // This creates a list where we can find "Pennsylvania" using "pa"
-          const reverseStateMap = {
-              "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas", "ca": "California",
-              "co": "Colorado", "ct": "Connecticut", "de": "Delaware", "fl": "Florida", "ga": "Georgia",
-              "hi": "Hawaii", "id": "Idaho", "il": "Illinois", "in": "Indiana", "ia": "Iowa",
-              "ks": "Kansas", "ky": "Kentucky", "la": "Louisiana", "me": "Maine", "md": "Maryland",
-              "ma": "Massachusetts", "mi": "Michigan", "mn": "Minnesota", "ms": "Mississippi", "mo": "Missouri",
-              "mt": "Montana", "ne": "Nebraska", "nv": "Nevada", "nh": "New Hampshire", "nj": "New Jersey",
-              "nm": "New Mexico", "ny": "New York", "nc": "North Carolina", "nd": "North Dakota", "oh": "Ohio",
-              "ok": "Oklahoma", "or": "Oregon", "pa": "Pennsylvania", "ri": "Rhode Island", "sc": "South Carolina",
-              "sd": "South Dakota", "tn": "Tennessee", "tx": "Texas", "ut": "Utah", "vt": "Vermont",
-              "va": "Virginia", "wa": "Washington", "wv": "West Virginia", "wi": "Wisconsin", "wy": "Wyoming"
-          };
-
-          // Update the title immediately
-          const fullStateName = reverseStateMap[stateAbbr] || "State";
-          pageTitle.innerText = `${fullStateName} Legislation`;
-
-          // --- FETCH DATA ---
-          try {
-              const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateAbbr}/government`;
-              const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=20&apikey=${PLURAL_API_KEY}`;
-              const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
-              const response = await fetch(proxyUrl);
-              const data = await response.json();
-
-              if (data.results) {
-                  grid.innerHTML = data.results.map(bill => `
-                      <article>
-                          <h3 class="major">${bill.identifier}</h3>
-                          <p>${bill.title.substring(0, 150)}...</p>
-                          <p style="font-size: 0.8rem; opacity: 0.7;">Last Action: ${bill.latest_action_description || 'Updated'}</p>
-                          <a href="details.html?bill_id=${bill.identifier}&state=${stateAbbr}" class="special">Learn more</a>
-                      </article>
-                  `).join('');
-              }
-          } catch (err) {
-              grid.innerHTML = "<p>Error loading legislation.</p>";
-          }
+        function populateDropdown() {
+            const dropdown = document.getElementById('state-dropdown');
+            for (let code in stateMap) {
+                let opt = document.createElement('option');
+                opt.value = code;
+                opt.innerHTML = stateMap[code];
+                dropdown.appendChild(opt);
+            }
         }
-        window.onload = loadAllBills;
+
+        function handleStateChange() {
+            const selectedState = document.getElementById('state-dropdown').value;
+            if (selectedState) {
+                // Update URL without refreshing so the user can bookmark it
+                const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?state=' + selectedState;
+                window.history.pushState({path:newurl},'',newurl);
+                loadAllBills(selectedState);
+            }
+        }
+
+        async function loadAllBills(forcedState = null) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const stateAbbr = forcedState || urlParams.get('state');
+            const grid = document.getElementById('bill-grid');
+            const pageTitle = document.getElementById('state-page-title');
+
+            if (!stateAbbr) {
+                pageTitle.innerText = "Select a State";
+                grid.innerHTML = "<p>Please choose a state above to view recent legislation.</p>";
+                return;
+            }
+
+            // Sync dropdown with URL state
+            document.getElementById('state-dropdown').value = stateAbbr;
+            const fullStateName = stateMap[stateAbbr] || "State";
+            pageTitle.innerText = `${fullStateName} Legislation`;
+
+            try {
+                grid.innerHTML = "<p>Loading bills...</p>";
+                const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateAbbr}/government`;
+                const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=40&apikey=${PLURAL_API_KEY}`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+
+                if (data.results) {
+                    allLoadedBills = data.results; // Save to global list
+                    renderGrid(allLoadedBills, stateAbbr);
+                }
+            } catch (err) {
+                grid.innerHTML = "<p>Error loading legislation. Please try again.</p>";
+            }
+        }
+
+        function renderGrid(bills, state) {
+            const grid = document.getElementById('bill-grid');
+            if (bills.length === 0) {
+                grid.innerHTML = "<p>No bills found matching your criteria.</p>";
+                return;
+            }
+            grid.innerHTML = bills.map(bill => `
+                <article>
+                    <h3 class="major">${bill.identifier}</h3>
+                    <p>${bill.title.substring(0, 150)}...</p>
+                    <p style="font-size: 0.8rem; opacity: 0.7;">Last Action: ${bill.latest_action_description || 'Updated'}</p>
+                    <a href="details.html?bill_id=${bill.identifier}&state=${state}" class="special">Learn more</a>
+                </article>
+            `).join('');
+        }
+
+        function filterBills() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const urlParams = new URLSearchParams(window.location.search);
+            const state = urlParams.get('state');
+
+            const filtered = allLoadedBills.filter(bill => 
+                bill.title.toLowerCase().includes(query) || 
+                bill.identifier.toLowerCase().includes(query)
+            );
+            renderGrid(filtered, state);
+        }
+
+        window.onload = () => {
+            populateDropdown();
+            loadAllBills();
+        };
     </script>
 </body>
 </html>
