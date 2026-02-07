@@ -1,0 +1,99 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>All Legislation - Solid State</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+</head>
+<body class="is-preload">
+    <div id="page-wrapper">
+        <header id="header">
+            <h1><a href="index.html">Legislation Tracker</a></h1>
+            <nav><a href="index.html">Back to Map</a></nav>
+        </header>
+
+        <section id="wrapper">
+            <header>
+              <div class="inner">
+                  <h2 id="state-page-title">Loading Legislation...</h2>
+                  <p>Comprehensive list of recent legislative activity.</p>
+              </div>
+            </header>
+
+            <div class="wrapper">
+                <div class="inner">
+                    <h3 class="major">Active Bills</h3>
+                    
+                    <section class="features" id="bill-grid">
+                        </section>
+
+                    <ul class="actions" style="margin-top: 3rem;">
+                        <li><a href="index.html" class="button">Back to Map</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/main.js"></script>
+
+    <script>
+        const PLURAL_API_KEY = 'a966b62f-c200-468a-a737-c7e5da4dfbbd';
+
+        async function loadAllBills() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const stateAbbr = urlParams.get('state'); // e.g., "pa"
+          const grid = document.getElementById('bill-grid');
+          const pageTitle = document.getElementById('state-page-title');
+
+          if (!stateAbbr) return;
+
+          // --- REVERSE LOOKUP FOR THE TITLE ---
+          // This creates a list where we can find "Pennsylvania" using "pa"
+          const reverseStateMap = {
+              "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas", "ca": "California",
+              "co": "Colorado", "ct": "Connecticut", "de": "Delaware", "fl": "Florida", "ga": "Georgia",
+              "hi": "Hawaii", "id": "Idaho", "il": "Illinois", "in": "Indiana", "ia": "Iowa",
+              "ks": "Kansas", "ky": "Kentucky", "la": "Louisiana", "me": "Maine", "md": "Maryland",
+              "ma": "Massachusetts", "mi": "Michigan", "mn": "Minnesota", "ms": "Mississippi", "mo": "Missouri",
+              "mt": "Montana", "ne": "Nebraska", "nv": "Nevada", "nh": "New Hampshire", "nj": "New Jersey",
+              "nm": "New Mexico", "ny": "New York", "nc": "North Carolina", "nd": "North Dakota", "oh": "Ohio",
+              "ok": "Oklahoma", "or": "Oregon", "pa": "Pennsylvania", "ri": "Rhode Island", "sc": "South Carolina",
+              "sd": "South Dakota", "tn": "Tennessee", "tx": "Texas", "ut": "Utah", "vt": "Vermont",
+              "va": "Virginia", "wa": "Washington", "wv": "West Virginia", "wi": "Wisconsin", "wy": "Wyoming"
+          };
+
+          // Update the title immediately
+          const fullStateName = reverseStateMap[stateAbbr] || "State";
+          pageTitle.innerText = `${fullStateName} Legislation`;
+
+          // --- FETCH DATA ---
+          try {
+              const jurisdictionId = `ocd-jurisdiction/country:us/state:${stateAbbr}/government`;
+              const targetUrl = `https://v3.openstates.org/bills?jurisdiction=${encodeURIComponent(jurisdictionId)}&sort=updated_desc&per_page=20&apikey=${PLURAL_API_KEY}`;
+              const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+              const response = await fetch(proxyUrl);
+              const data = await response.json();
+
+              if (data.results) {
+                  grid.innerHTML = data.results.map(bill => `
+                      <article>
+                          <h3 class="major">${bill.identifier}</h3>
+                          <p>${bill.title.substring(0, 150)}...</p>
+                          <p style="font-size: 0.8rem; opacity: 0.7;">Last Action: ${bill.latest_action_description || 'Updated'}</p>
+                          <a href="bill-details.html?bill_id=${bill.identifier}&state=${stateAbbr}" class="special">Learn more</a>
+                      </article>
+                  `).join('');
+              }
+          } catch (err) {
+              grid.innerHTML = "<p>Error loading legislation.</p>";
+          }
+        }
+        window.onload = loadAllBills;
+    </script>
+</body>
+</html>
